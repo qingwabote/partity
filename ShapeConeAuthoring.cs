@@ -51,7 +51,7 @@ namespace Partity
             }
         }
     }
-    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    [UpdateInGroup(typeof(ShapeSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct ShapeConeSystem : ISystem
     {
@@ -64,18 +64,18 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
+            var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var em = state.EntityManager;
 
-            foreach (var (emitter, payload, transform, cone) in
-                SystemAPI.Query<Emitter, RefRW<EmitterPayload>, LocalTransform, ShapeCone>())
+            foreach (var (emitter, payload, world, cone) in
+                SystemAPI.Query<Emitter, RefRW<EmitterPayload>, LocalToWorld, ShapeCone>())
             {
                 int count = payload.ValueRO.Value;
                 if (count <= 0) continue;
 
                 var s = cone;
                 var prefabLT = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
-                var rotation = math.mul(transform.Rotation, s.Rotation);
+                var rotation = math.mul(world.Rotation, s.Rotation);
 
                 for (int j = 0; j < count; j++)
                 {
@@ -91,7 +91,7 @@ namespace Partity
                             rng.NextFloat(-s.RandomPositionAmount, s.RandomPositionAmount),
                             rng.NextFloat(-s.RandomPositionAmount, s.RandomPositionAmount));
                     }
-                    lt.Position = transform.Position + math.rotate(rotation, localPos);
+                    lt.Position = world.Position + math.rotate(rotation, localPos);
                     float3 worldDir = math.rotate(rotation, localDir);
                     lt.Rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), prefabLT.Rotation);
                     ecb.SetComponent(p, lt);
@@ -100,9 +100,6 @@ namespace Partity
 
                 payload.ValueRW.Value = 0;
             }
-
-            ecb.Playback(state.EntityManager);
-            ecb.Dispose();
         }
 
         static void ConeEmit(float radius, float radiusThickness, float theta, float angle, ref Unity.Mathematics.Random rng, out float3 pos, out float3 dir)

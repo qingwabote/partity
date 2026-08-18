@@ -1,4 +1,3 @@
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -8,12 +7,14 @@ namespace Partity
 {
     public struct ShapeLine : IComponentData
     {
-        public quaternion Rotation;
+        public float Scale;
+        public bool Rotate;
     }
 
     public class ShapeLineAuthoring : MonoBehaviour
     {
-        public Vector3 Rotation;
+        public float Scale = 1f;
+        public bool Rotate = true;
 
         class Baker : Baker<ShapeLineAuthoring>
         {
@@ -22,48 +23,50 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new ShapeLine
                 {
-                    Rotation = Quaternion.Euler(authoring.Rotation),
+                    Scale = authoring.Scale,
+                    Rotate = authoring.Rotate
                 });
             }
         }
     }
 
-    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    [UpdateInGroup(typeof(ShapeSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct ShapeLineSystem : ISystem
     {
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = new EntityCommandBuffer(Allocator.Temp);
+            var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var em = state.EntityManager;
 
-            foreach (var (emitter, payload, transform, line) in
-                SystemAPI.Query<Emitter, RefRW<EmitterPayload>, LocalTransform, ShapeLine>())
+            foreach (var (emitter, payload, world, line) in
+                SystemAPI.Query<Emitter, RefRW<EmitterPayload>, LocalToWorld, ShapeLine>())
             {
                 int count = payload.ValueRO.Value;
                 if (count <= 0) continue;
 
-                var prefabLT = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
-                var rotation = math.mul(transform.Rotation, line.Rotation);
+                var prefab = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
+                var setDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
+                var worldRotation = line.Rotate ? world.Rotation : quaternion.identity;
+
+                var rotation = math.mul(worldRotation, prefab.Rotation);
+                var position = world.Position + math.rotate(worldRotation, prefab.Position);
+                var scale = prefab.Scale * line.Scale;
+                var transform = LocalTransform.FromPositionRotationScale(position, rotation, scale);
+                var direction = new Direction { Value = math.rotate(rotation, new float3(0f, 0f, 1f)) };
 
                 for (int j = 0; j < count; j++)
                 {
                     var p = ecb.Instantiate(emitter.ParticlePrefab);
-                    var lt = prefabLT;
-                    lt.Position = transform.Position + math.rotate(rotation, prefabLT.Position);
-                    lt.Rotation = math.mul(rotation, prefabLT.Rotation);
-                    ecb.SetComponent(p, lt);
-                    ecb.SetComponent(p, new Direction
+                    ecb.SetComponent(p, transform);
+                    if (setDirection)
                     {
-                        Value = math.rotate(rotation, new float3(0f, 0f, 1f))
-                    });
+                        ecb.SetComponent(p, direction);
+                    }
                 }
 
                 payload.ValueRW.Value = 0;
             }
-
-            ecb.Playback(state.EntityManager);
-            ecb.Dispose();
         }
     }
 }
