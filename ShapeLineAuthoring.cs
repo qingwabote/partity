@@ -45,16 +45,18 @@ namespace Partity
                 int count = payload.ValueRO.Value;
                 if (count <= 0) continue;
 
-                var prefab = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
+                var emitterPosition = world.Position;
+                var emitterRotation = line.Rotate ? world.Rotation : quaternion.identity;
+
+                var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
+                var particleRotation = math.mul(emitterRotation, offset.Rotation);
+                var particlePosition = emitterPosition + math.rotate(emitterRotation, offset.Position);
+                var particleScale = offset.Scale * line.Scale;
+
+                var transform = LocalTransform.FromPositionRotationScale(particlePosition, particleRotation, particleScale);
+                var direction = new Direction { Value = math.rotate(particleRotation, new float3(0f, 0f, 1f)) };
+
                 var setDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
-                var worldRotation = line.Rotate ? world.Rotation : quaternion.identity;
-
-                var rotation = math.mul(worldRotation, prefab.Rotation);
-                var position = world.Position + math.rotate(worldRotation, prefab.Position);
-                var scale = prefab.Scale * line.Scale;
-                var transform = LocalTransform.FromPositionRotationScale(position, rotation, scale);
-                var direction = new Direction { Value = math.rotate(rotation, new float3(0f, 0f, 1f)) };
-
                 for (int j = 0; j < count; j++)
                 {
                     var p = ecb.Instantiate(emitter.ParticlePrefab);

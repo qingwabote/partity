@@ -73,28 +73,29 @@ namespace Partity
                 int count = payload.ValueRO.Value;
                 if (count <= 0) continue;
 
-                var s = cone;
-                var prefabLT = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
-                var rotation = math.mul(world.Rotation, s.Rotation);
+                var emitterRotation = math.mul(world.Rotation, cone.Rotation);
 
+                var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
                 for (int j = 0; j < count; j++)
                 {
                     var p = ecb.Instantiate(emitter.ParticlePrefab);
-                    var lt = prefabLT;
-                    ConeEmit(s.Radius, s.RadiusThickness,
-                        GenerateArcAngle(s.ArcMode, s.Arc, j, count, ref rng),
-                        s.Angle, ref rng, out float3 localPos, out float3 localDir);
-                    if (s.RandomPositionAmount > 0f)
+                    ConeEmit(cone.Radius, cone.RadiusThickness,
+                        GenerateArcAngle(cone.ArcMode, cone.Arc, j, count, ref rng),
+                        cone.Angle, ref rng, out float3 pos, out float3 dir);
+                    if (cone.RandomPositionAmount > 0f)
                     {
-                        localPos += new float3(
-                            rng.NextFloat(-s.RandomPositionAmount, s.RandomPositionAmount),
-                            rng.NextFloat(-s.RandomPositionAmount, s.RandomPositionAmount),
-                            rng.NextFloat(-s.RandomPositionAmount, s.RandomPositionAmount));
+                        pos += new float3(
+                            rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount),
+                            rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount),
+                            rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount));
                     }
-                    lt.Position = world.Position + math.rotate(rotation, localPos);
-                    float3 worldDir = math.rotate(rotation, localDir);
-                    lt.Rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), prefabLT.Rotation);
-                    ecb.SetComponent(p, lt);
+                    float3 worldDir = math.rotate(emitterRotation, dir);
+                    ecb.SetComponent(p, new LocalTransform
+                    {
+                        Position = world.Position + math.rotate(emitterRotation, pos),
+                        Rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), offset.Rotation),
+                        Scale = offset.Scale
+                    });
                     ecb.SetComponent(p, new Direction { Value = worldDir });
                 }
 
