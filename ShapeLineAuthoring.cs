@@ -52,7 +52,7 @@ namespace Partity
                 var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
                 var particleRotation = math.mul(emitterRotation, offset.Rotation);
                 var particlePosition = emitterPosition + math.rotate(emitterRotation, offset.Position);
-                var particleScale = offset.Scale * emitterScale;
+                var particleScale = offset.Scale * emitterScale * emitter.Size;
 
                 var transform = LocalTransform.FromPositionRotationScale(particlePosition, particleRotation, particleScale);
                 var direction = new Direction { Value = math.rotate(particleRotation, new float3(0f, 0f, 1f)) };

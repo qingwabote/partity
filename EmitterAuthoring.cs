@@ -6,6 +6,7 @@ namespace Partity
     public struct Emitter : IComponentData
     {
         public Entity ParticlePrefab;
+        public float Size;
     }
 
     public struct EmitterPayload : IComponentData
@@ -16,6 +17,7 @@ namespace Partity
     public class EmitterAuthoring : MonoBehaviour
     {
         public GameObject ParticlePrefab;
+        public float Size = 1f;
 
         class Baker : Baker<EmitterAuthoring>
         {
@@ -25,6 +27,7 @@ namespace Partity
                 AddComponent(entity, new Emitter
                 {
                     ParticlePrefab = GetEntity(authoring.ParticlePrefab, TransformUsageFlags.Dynamic),
+                    Size = authoring.Size,
                 });
                 AddComponent(entity, new EmitterPayload());
             }

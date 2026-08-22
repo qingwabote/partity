@@ -94,7 +94,7 @@ namespace Partity
                     {
                         Position = world.Position + math.rotate(emitterRotation, pos),
                         Rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), offset.Rotation),
-                        Scale = offset.Scale
+                        Scale = offset.Scale * emitter.Size
                     });
                     ecb.SetComponent(p, new Direction { Value = worldDir });
                 }
