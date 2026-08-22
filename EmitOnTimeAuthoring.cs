@@ -16,7 +16,7 @@ namespace Partity
 
     public class EmitOnTimeAuthoring : MonoBehaviour
     {
-        [Min(0f)] public float Time = 1f;
+        [Min(0f)] public float Time = 0f;
         public int Emits = 1;
 
         class Baker : Baker<EmitOnTimeAuthoring>

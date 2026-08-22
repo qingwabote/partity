@@ -7,13 +7,13 @@ namespace Partity
 {
     public struct ShapeLine : IComponentData
     {
-        public float Scale;
+        public bool Scale;
         public bool Rotate;
     }
 
     public class ShapeLineAuthoring : MonoBehaviour
     {
-        public float Scale = 1f;
+        public bool Scale = true;
         public bool Rotate = true;
 
         class Baker : Baker<ShapeLineAuthoring>
@@ -45,13 +45,14 @@ namespace Partity
                 int count = payload.ValueRO.Value;
                 if (count <= 0) continue;
 
-                var emitterPosition = world.Position;
-                var emitterRotation = line.Rotate ? world.Rotation : quaternion.identity;
+                var emitterPosition = world.Value.Translation();
+                var emitterRotation = line.Rotate ? world.Value.Rotation() : quaternion.identity;
+                var emitterScale = line.Scale ? world.Value.Scale().x : 1;
 
                 var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
                 var particleRotation = math.mul(emitterRotation, offset.Rotation);
                 var particlePosition = emitterPosition + math.rotate(emitterRotation, offset.Position);
-                var particleScale = offset.Scale * line.Scale;
+                var particleScale = offset.Scale * emitterScale;
 
                 var transform = LocalTransform.FromPositionRotationScale(particlePosition, particleRotation, particleScale);
                 var direction = new Direction { Value = math.rotate(particleRotation, new float3(0f, 0f, 1f)) };

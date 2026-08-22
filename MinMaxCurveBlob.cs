@@ -37,9 +37,9 @@ namespace Partity
     }
 
 #if UNITY_EDITOR
-    public static class MinMaxCurveBaker
+    public static class MinMaxCurveExtensions
     {
-        public static BlobAssetReference<MinMaxCurveBlob> Bake(ParticleSystem.MinMaxCurve mmc)
+        public static BlobAssetReference<MinMaxCurveBlob> ToBlob(this ParticleSystem.MinMaxCurve mmc)
         {
             var builder = new BlobBuilder(Allocator.Temp);
             ref var root = ref builder.ConstructRoot<MinMaxCurveBlob>();

@@ -27,7 +27,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Renderable);
                 AddComponent(entity, new ProgressAnimation
                 {
-                    Curve = MinMaxCurveBaker.Bake(authoring.Curve)
+                    Curve = authoring.Curve.ToBlob()
                 });
                 AddComponent<MaterialPropertyProgress>(entity);
             }

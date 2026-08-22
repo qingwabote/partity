@@ -21,7 +21,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new SizeOverLifetime
                 {
-                    Curve = MinMaxCurveBaker.Bake(authoring.Size)
+                    Curve = authoring.Size.ToBlob()
                 });
             }
         }
