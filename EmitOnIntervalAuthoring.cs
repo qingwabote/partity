@@ -41,12 +41,12 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (config, timer, payload) in
-                SystemAPI.Query<EmitOnInterval, RefRW<EmitOnIntervalTimer>, RefRW<EmitterPayload>>())
+            foreach (var (config, timer, emitter) in
+                SystemAPI.Query<EmitOnInterval, RefRW<EmitOnIntervalTimer>, RefRW<Emitter>>())
             {
                 var elapsed = timer.ValueRO.Elapsed + dt;
 
-                payload.ValueRW.Value += (int)(elapsed / config.Interval) * config.Emits;
+                emitter.ValueRW.Payload += (int)(elapsed / config.Interval) * config.Emits;
                 timer.ValueRW.Elapsed = elapsed % config.Interval;
             }
         }

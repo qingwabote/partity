@@ -67,18 +67,19 @@ namespace Partity
             var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var em = state.EntityManager;
 
-            foreach (var (emitter, payload, world, cone) in
-                SystemAPI.Query<Emitter, RefRW<EmitterPayload>, LocalToWorld, ShapeCone>())
+            foreach (var (emitter, world, cone) in
+                SystemAPI.Query<RefRW<Emitter>, LocalToWorld, ShapeCone>())
             {
-                int count = payload.ValueRO.Value;
+                int count = emitter.ValueRO.Payload;
                 if (count <= 0) continue;
 
                 var emitterRotation = math.mul(world.Rotation, cone.Rotation);
 
-                var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
+                var particlePrefab = emitter.ValueRO.ParticlePrefab;
+                var offset = em.GetComponentData<LocalTransform>(particlePrefab);
                 for (int j = 0; j < count; j++)
                 {
-                    var p = ecb.Instantiate(emitter.ParticlePrefab);
+                    var p = ecb.Instantiate(particlePrefab);
                     ConeEmit(cone.Radius, cone.RadiusThickness,
                         GenerateArcAngle(cone.ArcMode, cone.Arc, j, count, ref rng),
                         cone.Angle, ref rng, out float3 pos, out float3 dir);
@@ -94,12 +95,12 @@ namespace Partity
                     {
                         Position = world.Position + math.rotate(emitterRotation, pos),
                         Rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), offset.Rotation),
-                        Scale = offset.Scale * emitter.Size
+                        Scale = offset.Scale * emitter.ValueRO.Size
                     });
                     ecb.SetComponent(p, new Direction { Value = worldDir });
                 }
 
-                payload.ValueRW.Value = 0;
+                emitter.ValueRW.Payload = 0;
             }
         }
 

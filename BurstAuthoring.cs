@@ -47,20 +47,20 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (timer, payload, bursts) in
-                SystemAPI.Query<RefRW<BurstTimer>, RefRW<EmitterPayload>, DynamicBuffer<Burst>>())
+            foreach (var (timer, emitter, bursts) in
+                SystemAPI.Query<RefRW<BurstTimer>, RefRW<Emitter>, DynamicBuffer<Burst>>())
             {
                 var t = timer.ValueRW;
                 t.Elapsed += dt;
 
-                var pl = payload.ValueRW;
+                var payload = emitter.ValueRO.Payload;
                 while (t.Index < bursts.Length && bursts[t.Index].Time <= t.Elapsed)
                 {
-                    pl.Value += bursts[t.Index].Count;
+                    payload += bursts[t.Index].Count;
                     t.Index++;
                 }
 
-                payload.ValueRW = pl;
+                emitter.ValueRW.Payload = payload;
                 timer.ValueRW = t;
             }
         }

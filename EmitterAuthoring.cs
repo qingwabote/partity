@@ -7,11 +7,7 @@ namespace Partity
     {
         public Entity ParticlePrefab;
         public float Size;
-    }
-
-    public struct EmitterPayload : IComponentData
-    {
-        public int Value;
+        public int Payload;
     }
 
     public class EmitterAuthoring : MonoBehaviour
@@ -29,7 +25,6 @@ namespace Partity
                     ParticlePrefab = GetEntity(authoring.ParticlePrefab, TransformUsageFlags.Dynamic),
                     Size = authoring.Size,
                 });
-                AddComponent(entity, new EmitterPayload());
             }
         }
     }

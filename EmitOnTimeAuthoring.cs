@@ -42,15 +42,15 @@ namespace Partity
             var dt = SystemAPI.Time.DeltaTime;
             var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
 
-            foreach (var (config, timer, payload, entity) in
-                SystemAPI.Query<EmitOnTime, RefRW<EmitOnTimeTimer>, RefRW<EmitterPayload>>().WithEntityAccess())
+            foreach (var (config, timer, emitter, entity) in
+                SystemAPI.Query<EmitOnTime, RefRW<EmitOnTimeTimer>, RefRW<Emitter>>().WithEntityAccess())
             {
                 var elapsed = timer.ValueRO.Elapsed + dt;
                 timer.ValueRW.Elapsed = elapsed;
 
                 if (elapsed < config.Time) continue;
 
-                payload.ValueRW.Value += config.Emits;
+                emitter.ValueRW.Payload += config.Emits;
                 ecb.RemoveComponent<EmitOnTime>(entity);
                 ecb.RemoveComponent<EmitOnTimeTimer>(entity);
             }
