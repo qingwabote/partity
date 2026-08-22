@@ -12,6 +12,7 @@ namespace Partity
         BurstSpread = 3,
     }
 
+    [WriteGroup(typeof(Emitter))]
     public struct ShapeCone : IComponentData
     {
         public float Angle;

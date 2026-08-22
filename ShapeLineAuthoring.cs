@@ -5,6 +5,7 @@ using UnityEngine;
 
 namespace Partity
 {
+    [WriteGroup(typeof(Emitter))]
     public struct ShapeLine : IComponentData
     {
         public bool Scale;
@@ -39,27 +40,27 @@ namespace Partity
             var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var em = state.EntityManager;
 
-            foreach (var (emitter, world, line) in
+            foreach (var (emitterRef, world, line) in
                 SystemAPI.Query<RefRW<Emitter>, LocalToWorld, ShapeLine>())
             {
-                int count = emitter.ValueRO.Payload;
-                if (count <= 0) continue;
+                var emitter = emitterRef.ValueRO;
+                if (emitter.Payload <= 0) continue;
 
                 var emitterPosition = world.Value.Translation();
                 var emitterRotation = line.Rotate ? world.Value.Rotation() : quaternion.identity;
                 var emitterScale = line.Scale ? world.Value.Scale().x : 1;
 
-                var particlePrefab = emitter.ValueRO.ParticlePrefab;
+                var particlePrefab = emitter.ParticlePrefab;
                 var offset = em.GetComponentData<LocalTransform>(particlePrefab);
                 var particleRotation = math.mul(emitterRotation, offset.Rotation);
                 var particlePosition = emitterPosition + math.rotate(emitterRotation, offset.Position);
-                var particleScale = offset.Scale * emitterScale * emitter.ValueRO.Size;
+                var particleScale = offset.Scale * emitterScale * emitter.Size;
 
                 var transform = LocalTransform.FromPositionRotationScale(particlePosition, particleRotation, particleScale);
                 var direction = new Direction { Value = math.rotate(particleRotation, new float3(0f, 0f, 1f)) };
 
                 var setDirection = em.HasComponent<Direction>(particlePrefab);
-                for (int j = 0; j < count; j++)
+                for (int i = 0; i < emitter.Payload; i++)
                 {
                     var p = ecb.Instantiate(particlePrefab);
                     ecb.SetComponent(p, transform);
@@ -69,7 +70,7 @@ namespace Partity
                     }
                 }
 
-                emitter.ValueRW.Payload = 0;
+                emitterRef.ValueRW.Payload = 0;
             }
         }
     }
