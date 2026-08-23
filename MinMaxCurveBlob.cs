@@ -22,8 +22,6 @@ namespace Partity
         public Sampler Max;
         public Sampler Min;
 
-        public float Evaluate(float t) => Evaluate(t, 1f);
-
         public float Evaluate(float t, float lerpFactor)
         {
             switch (Mode)

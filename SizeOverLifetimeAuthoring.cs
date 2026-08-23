@@ -7,6 +7,12 @@ namespace Partity
     public struct SizeOverLifetime : IComponentData
     {
         public BlobAssetReference<MinMaxCurveBlob> Curve;
+        public float Evaluate(float t, float lerpFactor) => Curve.Value.Evaluate(t, lerpFactor);
+    }
+
+    public struct SizeRaw : IComponentData
+    {
+        public float Value;
     }
 
 #if UNITY_EDITOR
@@ -28,14 +34,31 @@ namespace Partity
     }
 #endif
 
+    [UpdateBefore(typeof(SizeOverLifetimeSystem))]
+    [RequireMatchingQueriesForUpdate]
+    public partial struct SizeRawSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
+            foreach (var (transform, entity) in SystemAPI.Query<RefRO<LocalTransform>>()
+                         .WithAll<SizeOverLifetime>().WithNone<SizeRaw>().WithEntityAccess())
+            {
+                ecb.AddComponent(entity, new SizeRaw { Value = transform.ValueRO.Scale });
+            }
+            ecb.Playback(state.EntityManager);
+        }
+    }
+
     [RequireMatchingQueriesForUpdate]
     public partial struct SizeOverLifetimeSystem : ISystem
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (lifetime, size, transform) in SystemAPI.Query<RefRO<Lifetime>, SizeOverLifetime, RefRW<LocalTransform>>())
+            foreach (var (lifetime, size, raw, factor, transform) in
+                SystemAPI.Query<Lifetime, SizeOverLifetime, SizeRaw, AnimationFactor, RefRW<LocalTransform>>())
             {
-                transform.ValueRW.Scale = size.Curve.Value.Evaluate(lifetime.ValueRO.Time / lifetime.ValueRO.Life);
+                transform.ValueRW.Scale = size.Evaluate(lifetime.Time / lifetime.Life, factor.Value) * raw.Value;
             }
         }
     }
