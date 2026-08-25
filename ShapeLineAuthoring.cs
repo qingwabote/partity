@@ -8,14 +8,12 @@ namespace Partity
     [WriteGroup(typeof(Emitter))]
     public struct ShapeLine : IComponentData
     {
-        public bool Scale;
-        public bool Rotate;
+        public quaternion Rotation;
     }
 
     public class ShapeLineAuthoring : MonoBehaviour
     {
-        public bool Scale = true;
-        public bool Rotate = true;
+        public Vector3 Rotation;
 
         class Baker : Baker<ShapeLineAuthoring>
         {
@@ -24,8 +22,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new ShapeLine
                 {
-                    Scale = authoring.Scale,
-                    Rotate = authoring.Rotate
+                    Rotation = Quaternion.Euler(authoring.Rotation)
                 });
             }
         }
@@ -47,8 +44,8 @@ namespace Partity
                 if (emitter.Payload <= 0) continue;
 
                 var emitterPosition = world.Value.Translation();
-                var emitterRotation = line.Rotate ? world.Value.Rotation() : quaternion.identity;
-                var emitterScale = line.Scale ? world.Value.Scale().x : 1;
+                var emitterRotation = math.mul(world.Value.Rotation(), line.Rotation);
+                var emitterScale = world.Value.Scale().x;
 
                 var particlePrefab = emitter.ParticlePrefab;
                 var offset = em.GetComponentData<LocalTransform>(particlePrefab);
@@ -57,7 +54,7 @@ namespace Partity
                 var particleScale = offset.Scale * emitterScale * emitter.Size;
 
                 var transform = LocalTransform.FromPositionRotationScale(particlePosition, particleRotation, particleScale);
-                var direction = new Direction { Value = math.rotate(particleRotation, new float3(0f, 0f, 1f)) };
+                var direction = new Direction { Value = math.rotate(emitterRotation, new float3(0f, 0f, 1f)) };
 
                 var setDirection = em.HasComponent<Direction>(particlePrefab);
                 for (int i = 0; i < emitter.Payload; i++)
