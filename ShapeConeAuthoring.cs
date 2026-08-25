@@ -93,10 +93,12 @@ namespace Partity
                             rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount));
                     }
                     float3 worldDir = math.rotate(emitterRotation, dir);
+                    var rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), offset.Rotation);
+                    rotation = math.mul(rotation, quaternion.EulerZXY(rng.NextFloat3(emitter.Rotation.Min, emitter.Rotation.Max)));
                     ecb.SetComponent(p, new LocalTransform
                     {
                         Position = emitterPosition + math.rotate(emitterRotation, pos),
-                        Rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), offset.Rotation),
+                        Rotation = rotation,
                         Scale = offset.Scale * emitterScale * emitter.Size
                     });
                     ecb.SetComponent(p, new Direction { Value = worldDir });
