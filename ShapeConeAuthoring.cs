@@ -68,21 +68,22 @@ namespace Partity
             var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var em = state.EntityManager;
 
-            foreach (var (emitter, world, cone) in
+            foreach (var (emitterRef, world, cone) in
                 SystemAPI.Query<RefRW<Emitter>, LocalToWorld, ShapeCone>())
             {
-                int count = emitter.ValueRO.Payload;
-                if (count <= 0) continue;
+                var emitter = emitterRef.ValueRO;
+                if (emitter.Payload <= 0) continue;
 
-                var emitterRotation = math.mul(world.Rotation, cone.Rotation);
+                var emitterPosition = world.Value.Translation();
+                var emitterRotation = math.mul(world.Value.Rotation(), cone.Rotation);
+                var emitterScale = world.Value.Scale().x;
 
-                var particlePrefab = emitter.ValueRO.ParticlePrefab;
-                var offset = em.GetComponentData<LocalTransform>(particlePrefab);
-                for (int j = 0; j < count; j++)
+                var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
+                for (int j = 0; j < emitter.Payload; j++)
                 {
-                    var p = ecb.Instantiate(particlePrefab);
+                    var p = ecb.Instantiate(emitter.ParticlePrefab);
                     ConeEmit(cone.Radius, cone.RadiusThickness,
-                        GenerateArcAngle(cone.ArcMode, cone.Arc, j, count, ref rng),
+                        GenerateArcAngle(cone.ArcMode, cone.Arc, j, emitter.Payload, ref rng),
                         cone.Angle, ref rng, out float3 pos, out float3 dir);
                     if (cone.RandomPositionAmount > 0f)
                     {
@@ -94,14 +95,14 @@ namespace Partity
                     float3 worldDir = math.rotate(emitterRotation, dir);
                     ecb.SetComponent(p, new LocalTransform
                     {
-                        Position = world.Position + math.rotate(emitterRotation, pos),
+                        Position = emitterPosition + math.rotate(emitterRotation, pos),
                         Rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), offset.Rotation),
-                        Scale = offset.Scale * emitter.ValueRO.Size
+                        Scale = offset.Scale * emitterScale * emitter.Size
                     });
                     ecb.SetComponent(p, new Direction { Value = worldDir });
                 }
 
-                emitter.ValueRW.Payload = 0;
+                emitterRef.ValueRW.Payload = 0;
             }
         }
 
