@@ -39,7 +39,7 @@ namespace Partity
             foreach (var (transform, speed, direction) in
                 SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction>())
             {
-                transform.ValueRW.Position.xz += direction.Value.xz * speed.Value * dt;
+                transform.ValueRW.Position += speed.Value * dt * direction.Value;
             }
         }
     }
