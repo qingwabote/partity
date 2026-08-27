@@ -10,17 +10,30 @@ namespace Partity
         public float Value;
     }
 
+    public struct Direction : IComponentData
+    {
+        public float3 Value;
+    }
+
 #if UNITY_EDITOR
     public class MovementAuthoring : MonoBehaviour
     {
-        public float Speed;
+        public ParticleSystem.MinMaxCurve Speed = new ParticleSystem.MinMaxCurve(1f);
 
         class Baker : Baker<MovementAuthoring>
         {
             public override void Bake(MovementAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent(entity, new Speed { Value = authoring.Speed });
+                if (authoring.Speed.mode == ParticleSystemCurveMode.Constant)
+                {
+                    AddComponent(entity, new Speed { Value = authoring.Speed.constant });
+                }
+                else
+                {
+                    AddComponent(entity, new Speed { Value = 0f });
+                    AddComponent(entity, new StartSpeed { Curve = authoring.Speed.ToBlob() });
+                }
                 AddComponent(entity, new Direction { Value = new float3(0f, 0f, 1f) });
             }
         }

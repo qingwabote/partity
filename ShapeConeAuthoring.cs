@@ -79,6 +79,7 @@ namespace Partity
                 var emitterScale = world.Value.Scale().x;
 
                 var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
+                var setDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
                 for (int j = 0; j < emitter.Payload; j++)
                 {
                     var p = ecb.Instantiate(emitter.ParticlePrefab);
@@ -101,7 +102,10 @@ namespace Partity
                         Rotation = rotation,
                         Scale = offset.Scale * emitterScale * emitter.Size
                     });
-                    ecb.SetComponent(p, new Direction { Value = worldDir });
+                    if (setDirection)
+                    {
+                        ecb.SetComponent(p, new Direction { Value = worldDir });
+                    }
                 }
 
                 emitterRef.ValueRW.Payload = 0;

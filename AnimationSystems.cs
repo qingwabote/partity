@@ -8,9 +8,9 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (lifetime, animation, factor, progress) in SystemAPI.Query<RefRO<Lifetime>, ProgressAnimation, RefRO<AnimationFactor>, RefRW<MaterialPropertyProgress>>())
+            foreach (var (lifetime, animation, progress) in SystemAPI.Query<RefRO<Lifetime>, ProgressAnimation, RefRW<MaterialPropertyProgress>>())
             {
-                progress.ValueRW.Value = animation.Curve.Value.Evaluate(lifetime.ValueRO.Time / lifetime.ValueRO.Life, factor.ValueRO.Value);
+                progress.ValueRW.Value = animation.Curve.Value.Evaluate(lifetime.ValueRO.Time / lifetime.ValueRO.Life, lifetime.ValueRO.Lerp);
             }
         }
     }
@@ -21,9 +21,9 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (lifetime, animation, factor, property) in SystemAPI.Query<Lifetime, ThresholdAnimation, RefRO<AnimationFactor>, RefRW<MaterialPropertyThreshold>>())
+            foreach (var (lifetime, animation, property) in SystemAPI.Query<Lifetime, ThresholdAnimation, RefRW<MaterialPropertyThreshold>>())
             {
-                property.ValueRW.Value = animation.Curve.Value.Evaluate(lifetime.Time / lifetime.Life, factor.ValueRO.Value);
+                property.ValueRW.Value = animation.Curve.Value.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
             }
         }
     }
