@@ -1,4 +1,3 @@
-using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
@@ -65,24 +64,17 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
-            var em = state.EntityManager;
-
-            foreach (var (emitterRef, world, cone) in
-                SystemAPI.Query<RefRW<Emitter>, LocalToWorld, ShapeCone>())
+            foreach (var (emitterRef, world, cone, buffer) in
+                SystemAPI.Query<RefRW<Emitter>, LocalToWorld, ShapeCone, DynamicBuffer<Emission>>())
             {
                 var emitter = emitterRef.ValueRO;
                 if (emitter.Payload <= 0) continue;
 
                 var emitterPosition = world.Value.Translation();
                 var emitterRotation = math.mul(world.Value.Rotation(), cone.Rotation);
-                var emitterScale = world.Value.Scale().x;
 
-                var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
-                var setDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
                 for (int j = 0; j < emitter.Payload; j++)
                 {
-                    var p = ecb.Instantiate(emitter.ParticlePrefab);
                     ConeEmit(cone.Radius, cone.RadiusThickness,
                         GenerateArcAngle(cone.ArcMode, cone.Arc, j, emitter.Payload, ref rng),
                         cone.Angle, ref rng, out float3 pos, out float3 dir);
@@ -93,19 +85,11 @@ namespace Partity
                             rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount),
                             rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount));
                     }
-                    float3 worldDir = math.rotate(emitterRotation, dir);
-                    var rotation = math.mul(FromToRotation(new float3(0f, 1f, 0f), worldDir), offset.Rotation);
-                    rotation = math.mul(rotation, quaternion.EulerZXY(rng.NextFloat3(emitter.Rotation.Min, emitter.Rotation.Max)));
-                    ecb.SetComponent(p, new LocalTransform
+                    buffer.Add(new Emission
                     {
                         Position = emitterPosition + math.rotate(emitterRotation, pos),
-                        Rotation = rotation,
-                        Scale = offset.Scale * emitterScale * emitter.Size
+                        Direction = math.rotate(emitterRotation, dir)
                     });
-                    if (setDirection)
-                    {
-                        ecb.SetComponent(p, new Direction { Value = worldDir });
-                    }
                 }
 
                 emitterRef.ValueRW.Payload = 0;
@@ -145,17 +129,6 @@ namespace Partity
         static float Repeat(float t, float length)
         {
             return t - math.floor(t / length) * length;
-        }
-
-        static quaternion FromToRotation(float3 from, float3 to)
-        {
-            float3 f = math.normalizesafe(from);
-            float3 t = math.normalizesafe(to);
-            if (math.all(t == 0f)) return quaternion.identity;
-            float dot = math.clamp(math.dot(f, t), -1f, 1f);
-            if (dot > 0.9999f) return quaternion.identity;
-            if (dot < -0.9999f) return quaternion.AxisAngle(new float3(1f, 0f, 0f), math.PI);
-            return quaternion.AxisAngle(math.normalize(math.cross(f, t)), math.acos(dot));
         }
     }
 }

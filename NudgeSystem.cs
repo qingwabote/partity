@@ -2,7 +2,7 @@ using Unity.Entities;
 
 namespace Partity
 {
-    public struct Nudge : IComponentData, IEnableableComponent
+    public struct Nudge : IComponentData
     {
     }
 
@@ -12,10 +12,7 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (_, enabled) in SystemAPI.Query<RefRW<Nudge>, EnabledRefRW<Nudge>>())
-            {
-                enabled.ValueRW = false;
-            }
+            state.EntityManager.RemoveComponent(SystemAPI.QueryBuilder().WithAll<Nudge>().Build(), typeof(Nudge));
         }
     }
 }

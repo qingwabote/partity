@@ -54,6 +54,7 @@ namespace Partity
                             authoring.RotationZ.Evaluate(0f, 1f))),
                     },
                 });
+                AddBuffer<Emission>(entity);
             }
         }
     }
@@ -62,35 +63,22 @@ namespace Partity
     [RequireMatchingQueriesForUpdate]
     public partial struct ShapePointSystem : ISystem
     {
-        private Unity.Mathematics.Random rng;
-
-        public void OnCreate(ref SystemState state)
-        {
-            rng = new Unity.Mathematics.Random(987654321);
-        }
-
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
-            var em = state.EntityManager;
-
-            foreach (var (emitterRef, world) in
-                SystemAPI.Query<RefRW<Emitter>, LocalToWorld>()
+            foreach (var (emitterRef, world, buffer) in
+                SystemAPI.Query<RefRW<Emitter>, LocalToWorld, DynamicBuffer<Emission>>()
                     .WithOptions(EntityQueryOptions.FilterWriteGroup))
             {
                 var emitter = emitterRef.ValueRO;
                 if (emitter.Payload <= 0) continue;
 
-                var particlePrefab = emitter.ParticlePrefab;
-                var offset = em.GetComponentData<LocalTransform>(particlePrefab);
-                var position = world.Value.Translation() + offset.Position;
-                var scale = offset.Scale * emitter.Size;
-
                 for (int i = 0; i < emitter.Payload; i++)
                 {
-                    var rotation = math.mul(offset.Rotation, quaternion.EulerZXY(rng.NextFloat3(emitter.Rotation.Min, emitter.Rotation.Max)));
-                    var p = ecb.Instantiate(particlePrefab);
-                    ecb.SetComponent(p, LocalTransform.FromPositionRotationScale(position, rotation, scale));
+                    buffer.Add(new Emission
+                    {
+                        Position = world.Value.Translation(),
+                        Direction = new float3(0f, 0f, 1f)
+                    });
                 }
 
                 emitterRef.ValueRW.Payload = 0;
