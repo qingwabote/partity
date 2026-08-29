@@ -86,7 +86,7 @@ namespace Partity
                     buffer.Add(new Emission
                     {
                         Position = emitterPosition + math.rotate(emitterRotation, pos) * emitterScale,
-                        Direction = math.rotate(emitterRotation, dir)
+                        Rotation = math.mul(emitterRotation, quaternion.LookRotationSafe(dir, math.up()))
                     });
                 }
 

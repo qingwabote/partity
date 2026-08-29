@@ -7,7 +7,7 @@ namespace Partity
     public struct Emission : IBufferElementData
     {
         public float3 Position;
-        public float3 Direction;
+        public quaternion Rotation;
     }
 
     [UpdateInGroup(typeof(ShapeSystemGroup), OrderLast = true)]
@@ -39,7 +39,7 @@ namespace Partity
                 foreach (var emission in buffer)
                 {
                     var p = ecb.Instantiate(emitter.ParticlePrefab);
-                    var rotation = math.mul(math.mul(quaternion.LookRotationSafe(emission.Direction, math.up()), offset.Rotation),
+                    var rotation = math.mul(math.mul(emission.Rotation, offset.Rotation),
                         quaternion.EulerZXY(rng.NextFloat3(emitter.Rotation.Min, emitter.Rotation.Max)));
                     ecb.SetComponent(p, new LocalTransform
                     {
@@ -49,7 +49,7 @@ namespace Partity
                     });
                     if (hasDirection)
                     {
-                        ecb.SetComponent(p, new Direction { Value = emission.Direction });
+                        ecb.SetComponent(p, new Direction { Value = math.rotate(emission.Rotation, new float3(0f, 0f, 1f)) });
                     }
                     if (hasSpaceScale)
                     {

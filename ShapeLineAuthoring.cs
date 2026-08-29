@@ -44,7 +44,7 @@ namespace Partity
                 var record = new Emission
                 {
                     Position = world.Value.Translation(),
-                    Direction = math.rotate(emitterRotation, new float3(0f, 0f, 1f))
+                    Rotation = emitterRotation
                 };
                 for (int i = 0; i < emitter.Payload; i++)
                 {

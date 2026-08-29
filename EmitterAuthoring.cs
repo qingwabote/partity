@@ -77,7 +77,7 @@ namespace Partity
                     buffer.Add(new Emission
                     {
                         Position = world.Value.Translation(),
-                        Direction = new float3(0f, 0f, 1f)
+                        Rotation = quaternion.identity
                     });
                 }
 
