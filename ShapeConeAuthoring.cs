@@ -72,6 +72,7 @@ namespace Partity
 
                 var emitterPosition = world.Value.Translation();
                 var emitterRotation = math.mul(world.Value.Rotation(), cone.Rotation);
+                var emitterScale = world.Value.Scale().x;
 
                 for (int j = 0; j < emitter.Payload; j++)
                 {
@@ -80,14 +81,11 @@ namespace Partity
                         cone.Angle, ref rng, out float3 pos, out float3 dir);
                     if (cone.RandomPositionAmount > 0f)
                     {
-                        pos += new float3(
-                            rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount),
-                            rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount),
-                            rng.NextFloat(-cone.RandomPositionAmount, cone.RandomPositionAmount));
+                        pos += rng.NextFloat3Direction() * cone.RandomPositionAmount;
                     }
                     buffer.Add(new Emission
                     {
-                        Position = emitterPosition + math.rotate(emitterRotation, pos),
+                        Position = emitterPosition + math.rotate(emitterRotation, pos) * emitterScale,
                         Direction = math.rotate(emitterRotation, dir)
                     });
                 }
