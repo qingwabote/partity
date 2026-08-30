@@ -7,11 +7,7 @@ namespace Partity
     {
         public float Time;
         public int Emits;
-    }
-
-    public struct EmitOnTimeTimer : IComponentData
-    {
-        public float Elapsed;
+        public bool Emitted;
     }
 
     public class EmitOnTimeAuthoring : MonoBehaviour
@@ -23,13 +19,14 @@ namespace Partity
         {
             public override void Bake(EmitOnTimeAuthoring authoring)
             {
+                if (GetComponent<DurationAuthoring>() == null)
+                    Debug.LogError($"{authoring.name}: EmitOnTimeAuthoring requires a sibling DurationAuthoring.");
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new EmitOnTime
                 {
-                    Time = authoring.Time,
+                    Time = Mathf.Max(authoring.Time, 0f),
                     Emits = authoring.Emits,
                 });
-                AddComponent(entity, new EmitOnTimeTimer());
             }
         }
     }
@@ -39,23 +36,20 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            var dt = SystemAPI.Time.DeltaTime;
-            var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
-
-            foreach (var (config, timer, emitter, entity) in
-                SystemAPI.Query<EmitOnTime, RefRW<EmitOnTimeTimer>, RefRW<Emitter>>().WithEntityAccess())
+            foreach (var (config, emitter, duration) in
+                SystemAPI.Query<RefRW<EmitOnTime>, RefRW<Emitter>, Duration>())
             {
-                var elapsed = timer.ValueRO.Elapsed + dt;
-                timer.ValueRW.Elapsed = elapsed;
+                var c = config.ValueRO;
+                if (!c.Emitted && duration.Elapsed >= c.Time)
+                {
+                    emitter.ValueRW.Payload += c.Emits;
+                    c.Emitted = true;
+                }
+                if (duration.Elapsed == duration.Total)
+                    c.Emitted = false;
 
-                if (elapsed < config.Time) continue;
-
-                emitter.ValueRW.Payload += config.Emits;
-                ecb.RemoveComponent<EmitOnTime>(entity);
-                ecb.RemoveComponent<EmitOnTimeTimer>(entity);
+                config.ValueRW = c;
             }
-
-            ecb.Playback(state.EntityManager);
         }
     }
 }

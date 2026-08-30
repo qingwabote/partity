@@ -7,10 +7,6 @@ namespace Partity
     {
         public float Interval;
         public int Emits;
-    }
-
-    public struct EmitOnIntervalTimer : IComponentData
-    {
         public float Elapsed;
     }
 
@@ -29,7 +25,6 @@ namespace Partity
                     Interval = authoring.Interval,
                     Emits = authoring.Emits,
                 });
-                AddComponent(entity, new EmitOnIntervalTimer());
             }
         }
     }
@@ -41,13 +36,16 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (config, timer, emitter) in
-                SystemAPI.Query<EmitOnInterval, RefRW<EmitOnIntervalTimer>, RefRW<Emitter>>())
+            foreach (var (config, emitter) in
+                SystemAPI.Query<RefRW<EmitOnInterval>, RefRW<Emitter>>())
             {
-                var elapsed = timer.ValueRO.Elapsed + dt;
+                var c = config.ValueRO;
+                var elapsed = c.Elapsed + dt;
 
-                emitter.ValueRW.Payload += (int)(elapsed / config.Interval) * config.Emits;
-                timer.ValueRW.Elapsed = elapsed % config.Interval;
+                emitter.ValueRW.Payload += (int)(elapsed / c.Interval) * c.Emits;
+                c.Elapsed = elapsed % c.Interval;
+
+                config.ValueRW = c;
             }
         }
     }

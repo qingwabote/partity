@@ -11,7 +11,7 @@ namespace Partity
         public float3 Max;
     }
 
-    public struct Emitter : IComponentData
+    public struct Emitter : IComponentData, IEnableableComponent
     {
         public Entity ParticlePrefab;
         public Rotation Rotation;
