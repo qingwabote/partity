@@ -15,7 +15,7 @@ namespace Partity
     {
         public Entity ParticlePrefab;
         public Rotation Rotation;
-        public float Size;
+        public float3 Size;
         public int Payload;
     }
 
@@ -31,7 +31,7 @@ namespace Partity
         public ParticleSystem.MinMaxCurve RotationY;
         public ParticleSystem.MinMaxCurve RotationZ;
         [Space]
-        public float Size = 1f;
+        public Vector3 Size = Vector3.one;
 
         class Baker : Baker<EmitterAuthoring>
         {

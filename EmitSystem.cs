@@ -35,6 +35,10 @@ namespace Partity
                 var hasDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
                 var hasSpaceScale = em.HasComponent<SpaceScale>(emitter.ParticlePrefab);
                 var emitterScale = world.Value.Scale().x;
+                var uniform = emitter.Size.x == emitter.Size.y && emitter.Size.y == emitter.Size.z;
+                var scale = emitterScale * offset.Scale * (uniform ? emitter.Size.x : 1f);
+                var prefabPtm = uniform ? float4x4.identity
+                    : em.GetComponentData<PostTransformMatrix>(emitter.ParticlePrefab).Value;
 
                 foreach (var emission in buffer)
                 {
@@ -45,8 +49,15 @@ namespace Partity
                     {
                         Position = emission.Position + math.rotate(rotation, offset.Position),
                         Rotation = rotation,
-                        Scale = emitterScale * offset.Scale * emitter.Size
+                        Scale = scale
                     });
+                    if (!uniform)
+                    {
+                        ecb.SetComponent(p, new PostTransformMatrix
+                        {
+                            Value = math.mul(prefabPtm, float4x4.Scale(emitter.Size))
+                        });
+                    }
                     if (hasDirection)
                     {
                         ecb.SetComponent(p, new Direction { Value = math.rotate(emission.Rotation, new float3(0f, 0f, 1f)) });
