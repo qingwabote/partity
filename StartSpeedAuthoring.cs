@@ -25,15 +25,8 @@ namespace Partity
             public override void Bake(StartSpeedAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                if (authoring.Speed.mode == ParticleSystemCurveMode.Constant)
-                {
-                    AddComponent(entity, new Speed { Value = authoring.Speed.constant });
-                }
-                else
-                {
-                    AddComponent(entity, new Speed { Value = 0f });
-                    AddComponent(entity, new StartSpeed { Curve = authoring.Speed.ToBlob() });
-                }
+                AddComponent(entity, new Speed { Value = 0f });
+                AddComponent(entity, new StartSpeed { Curve = authoring.Speed.ToBlob() });
                 AddComponent(entity, new Direction { Value = new float3(0f, 0f, 1f) });
                 AddComponent(entity, new SpaceScale { Value = 1f });
             }

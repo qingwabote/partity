@@ -20,24 +20,14 @@ namespace Partity
             public override void Bake(LifetimeAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Renderable);
-                if (authoring.Life.mode == ParticleSystemCurveMode.Constant)
+                AddComponent(entity, new Lifetime
                 {
-                    AddComponent(entity, new Lifetime
-                    {
-                        Life = authoring.Life.constant
-                    });
-                }
-                else
+                    Life = 0f
+                });
+                AddComponent(entity, new StartLifetime
                 {
-                    AddComponent(entity, new Lifetime
-                    {
-                        Life = 0f
-                    });
-                    AddComponent(entity, new StartLifetime
-                    {
-                        Curve = authoring.Life.ToBlob()
-                    });
-                }
+                    Curve = authoring.Life.ToBlob()
+                });
                 AddComponent<Nudge>(entity);
             }
         }

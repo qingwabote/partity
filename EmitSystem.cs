@@ -26,14 +26,16 @@ namespace Partity
             var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var em = state.EntityManager;
 
-            foreach (var (emitter, world, buffer) in
-                SystemAPI.Query<Emitter, LocalToWorld, DynamicBuffer<Emission>>())
+            foreach (var (emitter, world, buffer, entity) in
+                SystemAPI.Query<Emitter, LocalToWorld, DynamicBuffer<Emission>>().WithEntityAccess())
             {
                 if (buffer.Length == 0) continue;
 
                 var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
                 var hasDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
                 var hasSpaceScale = em.HasComponent<SpaceScale>(emitter.ParticlePrefab);
+                var hasLifetimeOverride = em.HasComponent<LifetimeOverride>(entity);
+                var lifetimeOverride = hasLifetimeOverride ? em.GetComponentData<LifetimeOverride>(entity) : default;
                 var emitterScale = world.Value.Scale().x;
                 var uniform = emitter.Size.x == emitter.Size.y && emitter.Size.y == emitter.Size.z;
                 var scale = emitterScale * offset.Scale * (uniform ? emitter.Size.x : 1f);
@@ -65,6 +67,10 @@ namespace Partity
                     if (hasSpaceScale)
                     {
                         ecb.SetComponent(p, new SpaceScale { Value = emitterScale });
+                    }
+                    if (hasLifetimeOverride)
+                    {
+                        ecb.SetComponent(p, new StartLifetime { Curve = lifetimeOverride.Curve });
                     }
                 }
 
