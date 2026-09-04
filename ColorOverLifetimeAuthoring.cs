@@ -29,7 +29,8 @@ namespace Partity
     }
 #endif
 
-    [UpdateInGroup(typeof(PresentationSystemGroup), OrderFirst = true)]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(LifetimeSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct ColorOverLifetimeSystem : ISystem
     {

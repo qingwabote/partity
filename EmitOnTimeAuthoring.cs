@@ -54,19 +54,19 @@ namespace Partity
             {
                 var c = config.ValueRO;
 
+                c.Elapsed += dt;
+
+                if (c.Reset > 0f && c.Elapsed >= c.Reset)
+                {
+                    c.Elapsed %= c.Reset;
+                    c.Fired = 0;
+                }
+
                 var fires = c.Elapsed < c.Time
                     ? 0
                     : math.min((int)((c.Elapsed - c.Time) / c.Interval) + 1, c.Cycles);
                 emitter.ValueRW.Payload += (fires - c.Fired) * c.Emits;
                 c.Fired = fires;
-
-                if (c.Reset <= 0f || c.Elapsed < c.Reset)
-                    c.Elapsed += dt;
-                else
-                {
-                    c.Elapsed = 0f;
-                    c.Fired = 0;
-                }
 
                 config.ValueRW = c;
             }

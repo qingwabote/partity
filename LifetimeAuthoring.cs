@@ -53,7 +53,8 @@ namespace Partity
         }
     }
 
-    [UpdateInGroup(typeof(PresentationSystemGroup), OrderLast = true)]
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(StartLifetimeSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct LifetimeSystem : ISystem
     {
@@ -65,17 +66,11 @@ namespace Partity
             foreach (var (lifetime, entity) in SystemAPI.Query<RefRW<Lifetime>>().WithEntityAccess())
             {
                 var lt = lifetime.ValueRO;
-                if (lt.Time < lt.Life)
-                {
-                    lt.Time += dt;
-                    lt.Time = math.min(lt.Time, lt.Life);
-                }
-                else
-                {
-                    ecb.DestroyEntity(entity);
-                }
-
+                lt.Time = math.min(lt.Time + dt, lt.Life);
                 lifetime.ValueRW.Time = lt.Time;
+
+                if (lt.Time >= lt.Life)
+                    ecb.DestroyEntity(entity);
             }
 
             ecb.Playback(state.EntityManager);

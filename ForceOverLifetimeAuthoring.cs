@@ -37,6 +37,7 @@ namespace Partity
 #endif
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(LifetimeSystem))]
     [UpdateBefore(typeof(MovementSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct ForceOverLifetimeSystem : ISystem

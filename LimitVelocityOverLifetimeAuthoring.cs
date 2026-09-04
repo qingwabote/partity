@@ -35,6 +35,7 @@ namespace Partity
 #endif
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(LifetimeSystem))]
     [UpdateBefore(typeof(MovementSystem))]
     [UpdateAfter(typeof(ForceOverLifetimeSystem))]
     [RequireMatchingQueriesForUpdate]
