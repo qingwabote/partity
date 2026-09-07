@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Partity
 {
-    [WriteGroup(typeof(Emitter))]
+    [WriteGroup(typeof(Emission))]
     public struct ShapeLine : IComponentData
     {
         public quaternion Rotation;
@@ -34,24 +34,23 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (emitterRef, world, line, buffer) in
-                SystemAPI.Query<RefRW<Emitter>, LocalToWorld, ShapeLine, DynamicBuffer<Emission>>())
+            foreach (var (emitter, buffer, world, line) in
+                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld, ShapeLine>())
             {
-                var emitter = emitterRef.ValueRO;
-                if (emitter.Payload <= 0) continue;
+                var e = emitter.ValueRO;
+                if (e.Payload <= 0) continue;
 
-                var emitterRotation = math.mul(world.Value.Rotation(), line.Rotation);
-                var record = new Emission
+                var rotation = math.mul(world.Value.Rotation(), line.Rotation);
+                for (int i = 0; i < e.Payload; i++)
                 {
-                    Position = world.Value.Translation(),
-                    Rotation = emitterRotation
-                };
-                for (int i = 0; i < emitter.Payload; i++)
-                {
-                    buffer.Add(record);
+                    buffer.Add(new Emission
+                    {
+                        Position = world.Value.Translation(),
+                        Rotation = rotation
+                    });
                 }
 
-                emitterRef.ValueRW.Payload = 0;
+                emitter.ValueRW.Payload = 0;
             }
         }
     }

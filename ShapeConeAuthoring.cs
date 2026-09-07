@@ -11,7 +11,7 @@ namespace Partity
         BurstSpread = 3,
     }
 
-    [WriteGroup(typeof(Emitter))]
+    [WriteGroup(typeof(Emission))]
     public struct ShapeCone : IComponentData
     {
         public float Angle;
@@ -64,20 +64,20 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (emitterRef, world, cone, buffer) in
-                SystemAPI.Query<RefRW<Emitter>, LocalToWorld, ShapeCone, DynamicBuffer<Emission>>())
+            foreach (var (emitter, buffer, world, cone) in
+                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld, ShapeCone>())
             {
-                var emitter = emitterRef.ValueRO;
-                if (emitter.Payload <= 0) continue;
+                var e = emitter.ValueRO;
+                if (e.Payload <= 0) continue;
 
-                var emitterPosition = world.Value.Translation();
-                var emitterRotation = math.mul(world.Value.Rotation(), cone.Rotation);
-                var emitterScale = world.Value.Scale().x;
+                var position = world.Value.Translation();
+                var rotation = math.mul(world.Value.Rotation(), cone.Rotation);
+                var scale = world.Value.Scale().x;
 
-                for (int j = 0; j < emitter.Payload; j++)
+                for (int j = 0; j < e.Payload; j++)
                 {
                     ConeEmit(cone.Radius, cone.RadiusThickness,
-                        GenerateArcAngle(cone.ArcMode, cone.Arc, j, emitter.Payload, ref rng),
+                        GenerateArcAngle(cone.ArcMode, cone.Arc, j, e.Payload, ref rng),
                         cone.Angle, ref rng, out float3 pos, out float3 dir);
                     if (cone.RandomPositionAmount > 0f)
                     {
@@ -85,12 +85,12 @@ namespace Partity
                     }
                     buffer.Add(new Emission
                     {
-                        Position = emitterPosition + math.rotate(emitterRotation, pos) * emitterScale,
-                        Rotation = math.mul(emitterRotation, quaternion.LookRotationSafe(dir, math.up()))
+                        Position = position + math.rotate(rotation, pos) * scale,
+                        Rotation = math.mul(rotation, quaternion.LookRotationSafe(dir, math.up()))
                     });
                 }
 
-                emitterRef.ValueRW.Payload = 0;
+                emitter.ValueRW.Payload = 0;
             }
         }
 
