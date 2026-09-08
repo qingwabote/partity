@@ -51,8 +51,8 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (lifetime, size, transform) in
-                SystemAPI.Query<Lifetime, SizeOverLifetime, RefRW<LocalTransform>>())
+            foreach (var (transform, lifetime, size) in
+                SystemAPI.Query<RefRW<LocalTransform>, Lifetime, SizeOverLifetime>().WithNone<Paused>())
             {
                 transform.ValueRW.Scale = size.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp) * size.Base;
             }

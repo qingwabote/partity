@@ -26,8 +26,8 @@ namespace Partity
             var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
             var em = state.EntityManager;
 
-            foreach (var (emitter, world, buffer, entity) in
-                SystemAPI.Query<Emitter, LocalToWorld, DynamicBuffer<Emission>>().WithEntityAccess())
+            foreach (var (buffer, emitter, world, entity) in
+                SystemAPI.Query<DynamicBuffer<Emission>, Emitter, LocalToWorld>().WithNone<Paused>().WithEntityAccess())
             {
                 if (buffer.Length == 0) continue;
 

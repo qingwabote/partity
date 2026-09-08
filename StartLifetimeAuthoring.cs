@@ -16,9 +16,7 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (start, lifetime) in
-                SystemAPI.Query<StartLifetime, RefRW<Lifetime>>()
-                    .WithAll<Nudge>())
+            foreach (var (lifetime, start) in SystemAPI.Query<RefRW<Lifetime>, StartLifetime>().WithAll<Nudge>())
             {
                 lifetime.ValueRW.Life = start.Curve.Value.Evaluate(0f, lifetime.ValueRO.Lerp);
             }

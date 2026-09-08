@@ -24,7 +24,7 @@ namespace Partity
             var dt = SystemAPI.Time.DeltaTime;
 
             foreach (var (transform, speed, direction, scale) in
-                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction, SpaceScale>())
+                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction, SpaceScale>().WithNone<Paused>())
             {
                 transform.ValueRW.Position += speed.Value * scale.Value * dt * direction.Value;
             }

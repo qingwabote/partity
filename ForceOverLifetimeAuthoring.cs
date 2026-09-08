@@ -46,8 +46,8 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (force, lifetime, speed, direction) in
-                SystemAPI.Query<ForceOverLifetime, Lifetime, RefRW<Speed>, RefRW<Direction>>())
+            foreach (var (speed, direction, force, lifetime) in
+                SystemAPI.Query<RefRW<Speed>, RefRW<Direction>, ForceOverLifetime, Lifetime>().WithNone<Paused>())
             {
                 var dir = direction.ValueRO.Value;
                 var spd = speed.ValueRO.Value;

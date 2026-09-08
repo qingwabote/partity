@@ -65,14 +65,15 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (emitterRef, world, buffer) in
-                SystemAPI.Query<RefRW<Emitter>, LocalToWorld, DynamicBuffer<Emission>>()
+            foreach (var (emitter, buffer, world) in
+                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld>()
+                    .WithNone<Paused>()
                     .WithOptions(EntityQueryOptions.FilterWriteGroup))
             {
-                var emitter = emitterRef.ValueRO;
-                if (emitter.Payload <= 0) continue;
+                var e = emitter.ValueRO;
+                if (e.Payload <= 0) continue;
 
-                for (int i = 0; i < emitter.Payload; i++)
+                for (int i = 0; i < e.Payload; i++)
                 {
                     buffer.Add(new Emission
                     {
@@ -81,7 +82,7 @@ namespace Partity
                     });
                 }
 
-                emitterRef.ValueRW.Payload = 0;
+                emitter.ValueRW.Payload = 0;
             }
         }
     }

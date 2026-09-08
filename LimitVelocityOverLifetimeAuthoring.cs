@@ -45,8 +45,8 @@ namespace Partity
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
 
-            foreach (var (limitVelocity, lifetime, speed) in
-                SystemAPI.Query<LimitVelocityOverLifetime, Lifetime, RefRW<Speed>>())
+            foreach (var (speed, limitVelocity, lifetime) in
+                SystemAPI.Query<RefRW<Speed>, LimitVelocityOverLifetime, Lifetime>().WithNone<Paused>())
             {
                 var t = lifetime.Time / lifetime.Life;
                 var limit = limitVelocity.Limit.Value.Evaluate(t, lifetime.Lerp);

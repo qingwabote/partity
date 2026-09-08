@@ -42,9 +42,7 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (start, speed, lifetime) in
-                SystemAPI.Query<StartSpeed, RefRW<Speed>, Lifetime>()
-                    .WithAll<Nudge>())
+            foreach (var (speed, start, lifetime) in SystemAPI.Query<RefRW<Speed>, StartSpeed, Lifetime>().WithAll<Nudge>())
             {
                 speed.ValueRW.Value = start.Curve.Value.Evaluate(0f, lifetime.Lerp);
             }
