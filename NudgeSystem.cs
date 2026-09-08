@@ -6,6 +6,20 @@ namespace Partity
     {
     }
 
+#if UNITY_EDITOR
+    [WorldSystemFilter(WorldSystemFilterFlags.BakingSystem)]
+    public partial struct NudgeBakingSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            var query = SystemAPI.QueryBuilder().WithAny<StartSpeed, StartLifetime, SizeOverLifetime>()
+                .WithOptions(EntityQueryOptions.IncludePrefab | EntityQueryOptions.IncludeDisabledEntities)
+                .Build();
+            state.EntityManager.AddComponent(query, typeof(Nudge));
+        }
+    }
+#endif
+
     [UpdateInGroup(typeof(LateSimulationSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct NudgeCleanupSystem : ISystem

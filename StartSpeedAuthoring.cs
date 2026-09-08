@@ -1,6 +1,4 @@
-using Unity.Collections;
 using Unity.Entities;
-using Unity.Mathematics;
 using UnityEngine;
 
 namespace Partity
@@ -10,12 +8,8 @@ namespace Partity
         public BlobAssetReference<MinMaxCurveBlob> Curve;
     }
 
-    public struct SpaceScale : IComponentData
-    {
-        public float Value;
-    }
-
 #if UNITY_EDITOR
+    [RequireComponent(typeof(SpeedAuthoring))]
     public class StartSpeedAuthoring : MonoBehaviour
     {
         public ParticleSystem.MinMaxCurve Speed = new ParticleSystem.MinMaxCurve(1f);
@@ -25,26 +19,29 @@ namespace Partity
             public override void Bake(StartSpeedAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent(entity, new Speed { Value = 0f });
                 AddComponent(entity, new StartSpeed { Curve = authoring.Speed.ToBlob() });
-                AddComponent(entity, new Direction { Value = new float3(0f, 0f, 1f) });
-                AddComponent(entity, new SpaceScale { Value = 1f });
             }
         }
     }
 #endif
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(LifetimeLerpSystem))]
     [UpdateBefore(typeof(MovementSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct StartSpeedSystem : ISystem
     {
+        private Unity.Mathematics.Random m_Random;
+
+        public void OnCreate(ref SystemState state)
+        {
+            m_Random = new Unity.Mathematics.Random(0x45d9f3bu);
+        }
+
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (speed, start, lifetime) in SystemAPI.Query<RefRW<Speed>, StartSpeed, Lifetime>().WithAll<Nudge>())
+            foreach (var (speed, start) in SystemAPI.Query<RefRW<Speed>, StartSpeed>().WithAll<Nudge>())
             {
-                speed.ValueRW.Value = start.Curve.Value.Evaluate(0f, lifetime.Lerp);
+                speed.ValueRW.Value = start.Curve.Value.Evaluate(0f, m_Random.NextFloat());
             }
         }
     }

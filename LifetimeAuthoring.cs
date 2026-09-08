@@ -8,6 +8,9 @@ namespace Partity
     {
         public float Life;
         public float Time;
+        /// <summary>
+        /// Random min/max curve blend factor, fixed at birth and constant across frames.
+        /// </summary>
         public float Lerp;
     }
 
@@ -28,7 +31,6 @@ namespace Partity
                 {
                     Curve = authoring.Life.ToBlob()
                 });
-                AddComponent<Nudge>(entity);
             }
         }
     }
