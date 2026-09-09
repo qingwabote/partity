@@ -8,21 +8,25 @@ namespace Partity
     [WriteGroup(typeof(Emission))]
     public struct ShapeLine : IComponentData
     {
-        public quaternion Rotation;
     }
 
     public class ShapeLineAuthoring : MonoBehaviour
     {
+        public Vector3 Position;
         public Vector3 Rotation;
+        public Vector3 Scale = Vector3.one;
 
         class Baker : Baker<ShapeLineAuthoring>
         {
             public override void Bake(ShapeLineAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent(entity, new ShapeLine
+                AddComponent<ShapeLine>(entity);
+                AddComponent(entity, new ShapeTransform
                 {
-                    Rotation = Quaternion.Euler(authoring.Rotation)
+                    Position = authoring.Position,
+                    Rotation = Quaternion.Euler(authoring.Rotation),
+                    Scale = authoring.Scale,
                 });
             }
         }
@@ -34,19 +38,21 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (emitter, buffer, world, line) in
-                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld, ShapeLine>().WithNone<Paused>())
+            foreach (var (emitter, buffer, world, st) in
+                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld, ShapeTransform>().WithAll<ShapeLine>().WithNone<Paused>())
             {
                 var e = emitter.ValueRO;
                 if (e.Payload <= 0) continue;
 
-                var rotation = math.mul(world.Value.Rotation(), line.Rotation);
+                var m = math.mul(world.Value, float4x4.TRS(st.Position, st.Rotation, st.Scale));
+                var p = math.transform(m, float3.zero);
+                var r = math.mul(world.Value.Rotation(), st.Rotation);
                 for (int i = 0; i < e.Payload; i++)
                 {
                     buffer.Add(new Emission
                     {
-                        Position = world.Value.Translation(),
-                        Rotation = rotation
+                        Position = p,
+                        Rotation = r
                     });
                 }
 

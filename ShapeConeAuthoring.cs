@@ -19,7 +19,6 @@ namespace Partity
         public float RadiusThickness;
         public float Arc;
         public ParticleArcMode ArcMode;
-        public quaternion Rotation;
         public float RandomPositionAmount;
     }
 
@@ -30,7 +29,9 @@ namespace Partity
         public float RadiusThickness = 1f;
         public float Arc = 360f;
         public ParticleArcMode ArcMode = ParticleArcMode.Random;
+        public Vector3 Position;
         public Vector3 Rotation = new Vector3(-90f, 0f, 0f);
+        public Vector3 Scale = Vector3.one;
         public float RandomPositionAmount = 0.5f;
 
         class Baker : Baker<ShapeConeAuthoring>
@@ -46,11 +47,17 @@ namespace Partity
                     Radius = authoring.Radius,
                     RadiusThickness = authoring.RadiusThickness,
                     RandomPositionAmount = authoring.RandomPositionAmount,
+                });
+                AddComponent(entity, new ShapeTransform
+                {
+                    Position = authoring.Position,
                     Rotation = Quaternion.Euler(authoring.Rotation),
+                    Scale = authoring.Scale,
                 });
             }
         }
     }
+
     [UpdateInGroup(typeof(ShapeSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct ShapeConeSystem : ISystem
@@ -64,15 +71,14 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (emitter, buffer, world, cone) in
-                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld, ShapeCone>().WithNone<Paused>())
+            foreach (var (emitter, buffer, world, cone, st) in
+                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld, ShapeCone, ShapeTransform>().WithNone<Paused>())
             {
                 var e = emitter.ValueRO;
                 if (e.Payload <= 0) continue;
 
-                var position = world.Value.Translation();
-                var rotation = math.mul(world.Value.Rotation(), cone.Rotation);
-                var scale = world.Value.Scale().x;
+                var matrix = math.mul(world.Value, float4x4.TRS(st.Position, st.Rotation, st.Scale));
+                var rotation = math.mul(world.Value.Rotation(), st.Rotation);
 
                 for (int j = 0; j < e.Payload; j++)
                 {
@@ -85,7 +91,7 @@ namespace Partity
                     }
                     buffer.Add(new Emission
                     {
-                        Position = position + math.rotate(rotation, pos) * scale,
+                        Position = math.transform(matrix, pos),
                         Rotation = math.mul(rotation, quaternion.LookRotationSafe(dir, math.up()))
                     });
                 }
