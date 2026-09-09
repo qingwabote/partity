@@ -37,6 +37,7 @@ namespace Partity
                 var hasLifetimeOverride = em.HasComponent<LifetimeOverride>(entity);
                 var lifetimeOverride = hasLifetimeOverride ? em.GetComponentData<LifetimeOverride>(entity) : default;
                 var emitterScale = world.Value.Scale().x;
+                var emitterRotation = world.Value.Rotation();
                 var uniform = emitter.StartSize.x == emitter.StartSize.y && emitter.StartSize.y == emitter.StartSize.z;
                 var scale = emitterScale * offset.Scale * (uniform ? emitter.StartSize.x : 1f);
                 var prefabPtm = uniform ? float4x4.identity
@@ -45,12 +46,11 @@ namespace Partity
                 foreach (var emission in buffer)
                 {
                     var p = ecb.Instantiate(emitter.ParticlePrefab);
-                    var rotation = math.mul(math.mul(emission.Rotation, offset.Rotation),
-                        quaternion.EulerZXY(rng.NextFloat3(emitter.StartRotation.Min, emitter.StartRotation.Max)));
+                    var rotation = math.mul(emitterRotation, emission.Rotation);
                     ecb.SetComponent(p, new LocalTransform
                     {
-                        Position = emission.Position + math.rotate(emission.Rotation, offset.Position),
-                        Rotation = rotation,
+                        Position = math.transform(world.Value, emission.Position) + math.rotate(rotation, offset.Position),
+                        Rotation = math.mul(math.mul(rotation, offset.Rotation), quaternion.EulerZXY(rng.NextFloat3(emitter.StartRotation.Min, emitter.StartRotation.Max))),
                         Scale = scale
                     });
                     if (!uniform)
@@ -62,7 +62,7 @@ namespace Partity
                     }
                     if (hasDirection)
                     {
-                        ecb.SetComponent(p, new Direction { Value = math.rotate(emission.Rotation, new float3(0f, 0f, 1f)) });
+                        ecb.SetComponent(p, new Direction { Value = math.rotate(rotation, new float3(0f, 0f, 1f)) });
                     }
                     if (hasSpaceScale)
                     {

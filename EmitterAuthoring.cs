@@ -73,12 +73,13 @@ namespace Partity
                 var e = emitter.ValueRO;
                 if (e.Payload <= 0) continue;
 
+                var rotation = math.inverse(world.Value.Rotation());
                 for (int i = 0; i < e.Payload; i++)
                 {
                     buffer.Add(new Emission
                     {
-                        Position = world.Value.Translation(),
-                        Rotation = quaternion.identity
+                        Position = float3.zero,
+                        Rotation = rotation
                     });
                 }
 

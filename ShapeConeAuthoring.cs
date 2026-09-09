@@ -1,6 +1,5 @@
 using Unity.Entities;
 using Unity.Mathematics;
-using Unity.Transforms;
 using UnityEngine;
 
 namespace Partity
@@ -71,14 +70,13 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (emitter, buffer, world, cone, st) in
-                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld, ShapeCone, ShapeTransform>().WithNone<Paused>())
+            foreach (var (emitter, buffer, cone, transform) in
+                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, ShapeCone, ShapeTransform>().WithNone<Paused>())
             {
                 var e = emitter.ValueRO;
                 if (e.Payload <= 0) continue;
 
-                var matrix = math.mul(world.Value, float4x4.TRS(st.Position, st.Rotation, st.Scale));
-                var rotation = math.mul(world.Value.Rotation(), st.Rotation);
+                var matrix = float4x4.TRS(transform.Position, transform.Rotation, transform.Scale);
 
                 for (int j = 0; j < e.Payload; j++)
                 {
@@ -92,7 +90,7 @@ namespace Partity
                     buffer.Add(new Emission
                     {
                         Position = math.transform(matrix, pos),
-                        Rotation = math.mul(rotation, quaternion.LookRotationSafe(dir, math.up()))
+                        Rotation = math.mul(transform.Rotation, quaternion.LookRotationSafe(dir, math.up()))
                     });
                 }
 
