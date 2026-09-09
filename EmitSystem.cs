@@ -37,8 +37,8 @@ namespace Partity
                 var hasLifetimeOverride = em.HasComponent<LifetimeOverride>(entity);
                 var lifetimeOverride = hasLifetimeOverride ? em.GetComponentData<LifetimeOverride>(entity) : default;
                 var emitterScale = world.Value.Scale().x;
-                var uniform = emitter.Size.x == emitter.Size.y && emitter.Size.y == emitter.Size.z;
-                var scale = emitterScale * offset.Scale * (uniform ? emitter.Size.x : 1f);
+                var uniform = emitter.StartSize.x == emitter.StartSize.y && emitter.StartSize.y == emitter.StartSize.z;
+                var scale = emitterScale * offset.Scale * (uniform ? emitter.StartSize.x : 1f);
                 var prefabPtm = uniform ? float4x4.identity
                     : em.GetComponentData<PostTransformMatrix>(emitter.ParticlePrefab).Value;
 
@@ -46,10 +46,10 @@ namespace Partity
                 {
                     var p = ecb.Instantiate(emitter.ParticlePrefab);
                     var rotation = math.mul(math.mul(emission.Rotation, offset.Rotation),
-                        quaternion.EulerZXY(rng.NextFloat3(emitter.Rotation.Min, emitter.Rotation.Max)));
+                        quaternion.EulerZXY(rng.NextFloat3(emitter.StartRotation.Min, emitter.StartRotation.Max)));
                     ecb.SetComponent(p, new LocalTransform
                     {
-                        Position = emission.Position + math.rotate(rotation, offset.Position),
+                        Position = emission.Position + math.rotate(emission.Rotation, offset.Position),
                         Rotation = rotation,
                         Scale = scale
                     });
@@ -57,7 +57,7 @@ namespace Partity
                     {
                         ecb.SetComponent(p, new PostTransformMatrix
                         {
-                            Value = math.mul(prefabPtm, float4x4.Scale(emitter.Size))
+                            Value = math.mul(prefabPtm, float4x4.Scale(emitter.StartSize))
                         });
                     }
                     if (hasDirection)
