@@ -33,7 +33,7 @@ namespace Partity
 
                 var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
                 var hasDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
-                var hasSpaceScale = em.HasComponent<SpaceScale>(emitter.ParticlePrefab);
+                var hasLocalSpace = em.HasComponent<LocalSpace>(emitter.ParticlePrefab);
                 var hasLifetimeOverride = em.HasComponent<LifetimeOverride>(entity);
                 var lifetimeOverride = hasLifetimeOverride ? em.GetComponentData<LifetimeOverride>(entity) : default;
                 var emitterScale = world.Value.Scale().x;
@@ -62,11 +62,16 @@ namespace Partity
                     }
                     if (hasDirection)
                     {
-                        ecb.SetComponent(p, new Direction { Value = math.rotate(rotation, new float3(0f, 0f, 1f)) });
-                    }
-                    if (hasSpaceScale)
-                    {
-                        ecb.SetComponent(p, new SpaceScale { Value = emitterScale });
+                        ecb.SetComponent(p, new Direction
+                        {
+                            Value = hasLocalSpace
+                                ? math.rotate(emission.Rotation, new float3(0f, 0f, 1f))
+                                : math.rotate(rotation, new float3(0f, 0f, 1f))
+                        });
+                        if (hasLocalSpace)
+                        {
+                            ecb.SetComponent(p, new LocalSpace { Rotation = emitterRotation, Scale = emitterScale });
+                        }
                     }
                     if (hasLifetimeOverride)
                     {
