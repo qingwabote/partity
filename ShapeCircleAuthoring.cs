@@ -4,16 +4,9 @@ using UnityEngine;
 
 namespace Partity
 {
-    public enum ParticleArcMode
-    {
-        Random = 0,
-        BurstSpread = 3,
-    }
-
     [WriteGroup(typeof(Emission))]
-    public struct ShapeCone : IComponentData
+    public struct ShapeCircle : IComponentData
     {
-        public float Angle;
         public float Radius;
         public float RadiusThickness;
         public float Arc;
@@ -21,27 +14,25 @@ namespace Partity
         public float RandomPositionAmount;
     }
 
-    public class ShapeConeAuthoring : MonoBehaviour
+    public class ShapeCircleAuthoring : MonoBehaviour
     {
-        public float Angle = 80f;
-        public float Radius = 0.01f;
+        public float Radius = 1f;
         public float RadiusThickness = 1f;
         public float Arc = 360f;
         public ParticleArcMode ArcMode = ParticleArcMode.Random;
         public Vector3 Position;
-        public Vector3 Rotation = new Vector3(-90f, 0f, 0f);
+        public Vector3 Rotation;
         public Vector3 Scale = Vector3.one;
-        public float RandomPositionAmount = 0.5f;
+        public float RandomPositionAmount;
 
-        class Baker : Baker<ShapeConeAuthoring>
+        class Baker : Baker<ShapeCircleAuthoring>
         {
-            public override void Bake(ShapeConeAuthoring authoring)
+            public override void Bake(ShapeCircleAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent(entity, new ShapeCone
+                AddComponent(entity, new ShapeCircle
                 {
                     ArcMode = authoring.ArcMode,
-                    Angle = math.radians(authoring.Angle),
                     Arc = math.radians(authoring.Arc),
                     Radius = authoring.Radius,
                     RadiusThickness = authoring.RadiusThickness,
@@ -59,19 +50,19 @@ namespace Partity
 
     [UpdateInGroup(typeof(ShapeSystemGroup))]
     [RequireMatchingQueriesForUpdate]
-    public partial struct ShapeConeSystem : ISystem
+    public partial struct ShapeCircleSystem : ISystem
     {
         private Unity.Mathematics.Random rng;
 
         public void OnCreate(ref SystemState state)
         {
-            rng = new Unity.Mathematics.Random(123456789);
+            rng = new Unity.Mathematics.Random(987654321);
         }
 
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (emitter, buffer, cone, transform) in
-                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, ShapeCone, ShapeTransform>().WithNone<Paused>())
+            foreach (var (emitter, buffer, circle, transform) in
+                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, ShapeCircle, ShapeTransform>().WithNone<Paused>())
             {
                 var e = emitter.ValueRO;
                 if (e.Payload <= 0) continue;
@@ -80,12 +71,13 @@ namespace Partity
 
                 for (int j = 0; j < e.Payload; j++)
                 {
-                    ConeEmit(cone.Radius, cone.RadiusThickness,
-                        ShapeUtils.GenerateArcAngle(cone.ArcMode, cone.Arc, j, e.Payload, ref rng),
-                        cone.Angle, ref rng, out float3 pos, out float3 dir);
-                    if (cone.RandomPositionAmount > 0f)
+                    CircleEmit(circle.Radius, circle.RadiusThickness,
+                        ShapeUtils.GenerateArcAngle(circle.ArcMode, circle.Arc, j, e.Payload, ref rng),
+                        ref rng, out float3 pos, out float3 dir);
+                    if (circle.RandomPositionAmount > 0f)
                     {
-                        pos += rng.NextFloat3Direction() * cone.RandomPositionAmount;
+                        var a = circle.RandomPositionAmount;
+                        pos += new float3(rng.NextFloat(-a, a), rng.NextFloat(-a, a), rng.NextFloat(-a, a));
                     }
                     buffer.Add(new Emission
                     {
@@ -98,13 +90,10 @@ namespace Partity
             }
         }
 
-        static void ConeEmit(float radius, float radiusThickness, float theta, float angle, ref Unity.Mathematics.Random rng, out float3 pos, out float3 dir)
+        static void CircleEmit(float radius, float radiusThickness, float theta, ref Unity.Mathematics.Random rng, out float3 pos, out float3 dir)
         {
             ShapeUtils.RandomPointBetweenCircleAtFixedAngle(out pos, radius * (1f - radiusThickness), radius, theta, ref rng);
-            dir = pos * math.sin(angle);
-            dir.z = math.cos(angle) * radius;
-            dir = math.normalizesafe(dir);
-            pos.z = 0f;
+            dir = math.normalizesafe(pos);
         }
     }
 }
