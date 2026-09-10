@@ -55,6 +55,16 @@ namespace Partity
                     rotation.Z.Value.Evaluate(t, lifetime.Lerp)) * dt;
                 transform.ValueRW.Rotation = math.mul(transform.ValueRW.Rotation, quaternion.EulerZXY(r));
             }
+
+            foreach (var (transform, rotation) in
+                SystemAPI.Query<RefRW<LocalTransform>, RotationOverLifetime>().WithNone<Paused, Lifetime>())
+            {
+                var r = new float3(
+                    rotation.X.Value.Evaluate(0f, 0f),
+                    rotation.Y.Value.Evaluate(0f, 0f),
+                    rotation.Z.Value.Evaluate(0f, 0f)) * dt;
+                transform.ValueRW.Rotation = math.mul(transform.ValueRW.Rotation, quaternion.EulerZXY(r));
+            }
         }
     }
 }
