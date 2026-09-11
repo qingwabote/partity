@@ -11,11 +11,23 @@ namespace Partity
         public float3 Max;
     }
 
+    public struct StartSize
+    {
+        public float3 Min;
+        public float3 Max;
+
+        public static StartSize operator *(StartSize size, float k) => new StartSize
+        {
+            Min = size.Min * k,
+            Max = size.Max * k,
+        };
+    }
+
     public struct Emitter : IComponentData
     {
         public Entity ParticlePrefab;
         public StartRotation StartRotation;
-        public float3 StartSize;
+        public StartSize StartSize;
         public int Payload;
     }
 
@@ -30,8 +42,10 @@ namespace Partity
         public ParticleSystem.MinMaxCurve StartRotationX;
         public ParticleSystem.MinMaxCurve StartRotationY;
         public ParticleSystem.MinMaxCurve StartRotationZ;
-        [Space]
-        public Vector3 StartSize = Vector3.one;
+        [Header("Start Size")]
+        public ParticleSystem.MinMaxCurve StartSizeX = new ParticleSystem.MinMaxCurve(1f);
+        public ParticleSystem.MinMaxCurve StartSizeY = new ParticleSystem.MinMaxCurve(1f);
+        public ParticleSystem.MinMaxCurve StartSizeZ = new ParticleSystem.MinMaxCurve(1f);
 
         class Baker : Baker<EmitterAuthoring>
         {
@@ -41,7 +55,17 @@ namespace Partity
                 AddComponent(entity, new Emitter
                 {
                     ParticlePrefab = GetEntity(authoring.ParticlePrefab, TransformUsageFlags.Dynamic),
-                    StartSize = authoring.StartSize,
+                    StartSize = new StartSize
+                    {
+                        Min = new float3(
+                            authoring.StartSizeX.Evaluate(0f, 0f),
+                            authoring.StartSizeY.Evaluate(0f, 0f),
+                            authoring.StartSizeZ.Evaluate(0f, 0f)),
+                        Max = new float3(
+                            authoring.StartSizeX.Evaluate(0f, 1f),
+                            authoring.StartSizeY.Evaluate(0f, 1f),
+                            authoring.StartSizeZ.Evaluate(0f, 1f)),
+                    },
                     StartRotation = new StartRotation
                     {
                         Min = math.radians(new float3(

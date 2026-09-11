@@ -38,13 +38,16 @@ namespace Partity
                 var lifetimeOverride = hasLifetimeOverride ? em.GetComponentData<LifetimeOverride>(entity) : default;
                 var emitterScale = world.Value.Scale().x;
                 var emitterRotation = world.Value.Rotation();
-                var uniform = emitter.StartSize.x == emitter.StartSize.y && emitter.StartSize.y == emitter.StartSize.z;
-                var scale = emitterScale * offset.Scale * (uniform ? emitter.StartSize.x : 1f);
+                var startSize = emitter.StartSize;
+                var uniform = startSize.Min.x == startSize.Max.x && startSize.Min.y == startSize.Max.y && startSize.Min.z == startSize.Max.z
+                    && startSize.Min.x == startSize.Min.y && startSize.Min.y == startSize.Min.z;
+                var scale = emitterScale * offset.Scale * (uniform ? startSize.Min.x : 1f);
                 var prefabPtm = uniform ? float4x4.identity
                     : em.GetComponentData<PostTransformMatrix>(emitter.ParticlePrefab).Value;
 
                 foreach (var emission in buffer)
                 {
+                    var size = rng.NextFloat3(startSize.Min, startSize.Max);
                     var p = ecb.Instantiate(emitter.ParticlePrefab);
                     var rotation = math.mul(emitterRotation, emission.Rotation);
                     ecb.SetComponent(p, new LocalTransform
@@ -57,7 +60,7 @@ namespace Partity
                     {
                         ecb.SetComponent(p, new PostTransformMatrix
                         {
-                            Value = math.mul(prefabPtm, float4x4.Scale(emitter.StartSize))
+                            Value = math.mul(prefabPtm, float4x4.Scale(size))
                         });
                     }
                     if (hasDirection)
