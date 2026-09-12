@@ -5,7 +5,7 @@ namespace Partity
 {
     public struct StartSpeed : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> Curve;
+        public MinMaxCurve Curve;
     }
 
 #if UNITY_EDITOR
@@ -19,7 +19,7 @@ namespace Partity
             public override void Bake(StartSpeedAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent(entity, new StartSpeed { Curve = authoring.Speed.ToBlob() });
+                AddComponent(entity, new StartSpeed { Curve = authoring.Speed });
             }
         }
     }
@@ -41,7 +41,7 @@ namespace Partity
         {
             foreach (var (speed, start) in SystemAPI.Query<RefRW<Speed>, StartSpeed>().WithAll<Nudge>())
             {
-                speed.ValueRW.Value = start.Curve.Value.Evaluate(0f, m_Random.NextFloat());
+                speed.ValueRW.Value = start.Curve.Evaluate(0f, m_Random.NextFloat());
             }
         }
     }

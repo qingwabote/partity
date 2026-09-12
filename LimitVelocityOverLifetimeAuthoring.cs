@@ -7,7 +7,7 @@ namespace Partity
 {
     public struct LimitVelocityOverLifetime : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> Limit;
+        public MinMaxCurve Limit;
         public float InterpSpeed;
     }
 
@@ -24,7 +24,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new LimitVelocityOverLifetime
                 {
-                    Limit = authoring.Limit.ToBlob(),
+                    Limit = authoring.Limit,
                     // Shuriken scales the excess velocity by (1-dampen) per 1/30 s sub-step;
                     // -30*ln(1-dampen) is the equivalent per-second interp speed
                     InterpSpeed = -30f * math.log(math.max(1f - authoring.Dampen, 1e-30f)),
@@ -49,7 +49,7 @@ namespace Partity
                 SystemAPI.Query<RefRW<Speed>, LimitVelocityOverLifetime, Lifetime>().WithNone<Paused>())
             {
                 var t = lifetime.Time / lifetime.Life;
-                var limit = limitVelocity.Limit.Value.Evaluate(t, lifetime.Lerp);
+                var limit = limitVelocity.Limit.Evaluate(t, lifetime.Lerp);
 
                 var current = speed.ValueRO.Value;
                 // Target: the speed clamped to the limit; FInterpTo leaves it unchanged while within the limit

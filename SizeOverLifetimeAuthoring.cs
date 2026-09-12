@@ -6,9 +6,9 @@ namespace Partity
 {
     public struct SizeOverLifetime : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> Curve;
+        public MinMaxCurve Curve;
         public float Base;
-        public float Evaluate(float t, float lerpFactor) => Curve.Value.Evaluate(t, lerpFactor);
+        public float Evaluate(float t, float lerpFactor) => Curve.Evaluate(t, lerpFactor);
     }
 
 #if UNITY_EDITOR
@@ -23,7 +23,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new SizeOverLifetime
                 {
-                    Curve = authoring.Size.ToBlob()
+                    Curve = authoring.Size
                 });
             }
         }

@@ -6,7 +6,7 @@ namespace Partity
 {
     public struct ColorOverLifetime : IComponentData
     {
-        public BlobAssetReference<MinMaxGradientBlob> Gradient;
+        public MinMaxGradient Gradient;
     }
 
 #if UNITY_EDITOR
@@ -21,7 +21,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Renderable);
                 AddComponent(entity, new ColorOverLifetime
                 {
-                    Gradient = authoring.Color.ToBlob()
+                    Gradient = authoring.Color
                 });
                 AddComponent<URPMaterialPropertyBaseColor>(entity);
             }
@@ -39,7 +39,7 @@ namespace Partity
             foreach (var (baseColor, lifetime, color) in
                 SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, Lifetime, ColorOverLifetime>().WithNone<Paused>())
             {
-                baseColor.ValueRW.Value = color.Gradient.Value.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
+                baseColor.ValueRW.Value = color.Gradient.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
             }
         }
     }

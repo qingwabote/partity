@@ -5,9 +5,10 @@ namespace Partity
 {
     public struct LifetimeOverride : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> Curve;
+        public MinMaxCurve Curve;
     }
 
+#if UNITY_EDITOR
     public class LifetimeOverrideAuthoring : MonoBehaviour
     {
         public ParticleSystem.MinMaxCurve Curve = new ParticleSystem.MinMaxCurve(1f);
@@ -19,9 +20,10 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new LifetimeOverride
                 {
-                    Curve = authoring.Curve.ToBlob()
+                    Curve = authoring.Curve
                 });
             }
         }
     }
+#endif
 }

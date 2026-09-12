@@ -15,6 +15,7 @@ namespace Partity
         public int Fired;
     }
 
+#if UNITY_EDITOR
     public class EmitOnTimeAuthoring : MonoBehaviour
     {
         [Min(0f)] public float Time = 0f;
@@ -41,6 +42,7 @@ namespace Partity
             }
         }
     }
+#endif
 
     [RequireMatchingQueriesForUpdate]
     public partial struct EmitOnTimeSystem : ISystem

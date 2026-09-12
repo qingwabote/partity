@@ -31,6 +31,7 @@ namespace Partity
         public int Payload;
     }
 
+#if UNITY_EDITOR
     public class EmitterAuthoring : MonoBehaviour
     {
         public GameObject ParticlePrefab;
@@ -52,36 +53,39 @@ namespace Partity
             public override void Bake(EmitterAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
+                // Declare the particle prefab dependency so editing the prefab invalidates this bake.
+                DependsOn(authoring.ParticlePrefab);
                 AddComponent(entity, new Emitter
                 {
                     ParticlePrefab = GetEntity(authoring.ParticlePrefab, TransformUsageFlags.Dynamic),
                     StartSize = new StartSize
                     {
                         Min = new float3(
-                            authoring.StartSizeX.Evaluate(0f, 0f),
-                            authoring.StartSizeY.Evaluate(0f, 0f),
-                            authoring.StartSizeZ.Evaluate(0f, 0f)),
+                        authoring.StartSizeX.Evaluate(0f, 0f),
+                        authoring.StartSizeY.Evaluate(0f, 0f),
+                        authoring.StartSizeZ.Evaluate(0f, 0f)),
                         Max = new float3(
-                            authoring.StartSizeX.Evaluate(0f, 1f),
-                            authoring.StartSizeY.Evaluate(0f, 1f),
-                            authoring.StartSizeZ.Evaluate(0f, 1f)),
+                        authoring.StartSizeX.Evaluate(0f, 1f),
+                        authoring.StartSizeY.Evaluate(0f, 1f),
+                        authoring.StartSizeZ.Evaluate(0f, 1f)),
                     },
                     StartRotation = new StartRotation
                     {
                         Min = math.radians(new float3(
-                            authoring.StartRotationX.Evaluate(0f, 0f),
-                            authoring.StartRotationY.Evaluate(0f, 0f),
-                            authoring.StartRotationZ.Evaluate(0f, 0f))),
+                        authoring.StartRotationX.Evaluate(0f, 0f),
+                        authoring.StartRotationY.Evaluate(0f, 0f),
+                        authoring.StartRotationZ.Evaluate(0f, 0f))),
                         Max = math.radians(new float3(
-                            authoring.StartRotationX.Evaluate(0f, 1f),
-                            authoring.StartRotationY.Evaluate(0f, 1f),
-                            authoring.StartRotationZ.Evaluate(0f, 1f))),
+                        authoring.StartRotationX.Evaluate(0f, 1f),
+                        authoring.StartRotationY.Evaluate(0f, 1f),
+                        authoring.StartRotationZ.Evaluate(0f, 1f))),
                     },
                 });
                 AddBuffer<Emission>(entity);
             }
         }
     }
+#endif
 
     [UpdateInGroup(typeof(ShapeSystemGroup))]
     [RequireMatchingQueriesForUpdate]

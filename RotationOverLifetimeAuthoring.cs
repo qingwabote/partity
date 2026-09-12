@@ -7,9 +7,9 @@ namespace Partity
 {
     public struct RotationOverLifetime : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> X;
-        public BlobAssetReference<MinMaxCurveBlob> Y;
-        public BlobAssetReference<MinMaxCurveBlob> Z;
+        public MinMaxCurve X;
+        public MinMaxCurve Y;
+        public MinMaxCurve Z;
     }
 
 #if UNITY_EDITOR
@@ -26,9 +26,9 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new RotationOverLifetime
                 {
-                    X = authoring.X.ToBlob(),
-                    Y = authoring.Y.ToBlob(),
-                    Z = authoring.Z.ToBlob(),
+                    X = authoring.X,
+                    Y = authoring.Y,
+                    Z = authoring.Z,
                 });
             }
         }
@@ -50,9 +50,9 @@ namespace Partity
             {
                 var t = lifetime.Time / lifetime.Life;
                 var r = new float3(
-                    rotation.X.Value.Evaluate(t, lifetime.Lerp),
-                    rotation.Y.Value.Evaluate(t, lifetime.Lerp),
-                    rotation.Z.Value.Evaluate(t, lifetime.Lerp)) * dt;
+                    rotation.X.Evaluate(t, lifetime.Lerp),
+                    rotation.Y.Evaluate(t, lifetime.Lerp),
+                    rotation.Z.Evaluate(t, lifetime.Lerp)) * dt;
                 transform.ValueRW.Rotation = math.mul(transform.ValueRW.Rotation, quaternion.EulerZXY(r));
             }
 
@@ -60,9 +60,9 @@ namespace Partity
                 SystemAPI.Query<RefRW<LocalTransform>, RotationOverLifetime>().WithNone<Paused, Lifetime>())
             {
                 var r = new float3(
-                    rotation.X.Value.Evaluate(0f, 0f),
-                    rotation.Y.Value.Evaluate(0f, 0f),
-                    rotation.Z.Value.Evaluate(0f, 0f)) * dt;
+                    rotation.X.Evaluate(0f, 0f),
+                    rotation.Y.Evaluate(0f, 0f),
+                    rotation.Z.Evaluate(0f, 0f)) * dt;
                 transform.ValueRW.Rotation = math.mul(transform.ValueRW.Rotation, quaternion.EulerZXY(r));
             }
         }

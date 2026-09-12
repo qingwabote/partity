@@ -19,15 +19,30 @@ namespace Partity
     {
         public Sampler Color;
         public Sampler Alpha;
+
+        public float4 Float(float time)
+        {
+            return new float4(Color.Vec3(time), Alpha.Float(time));
+        }
     }
 
-    public struct MinMaxGradientBlob
+    public struct MinMaxGradientSampler
+    {
+        public GradientSampler Min;
+        public GradientSampler Max;
+
+        public float4 Float(float time, float lerp)
+        {
+            return math.lerp(Min.Float(time), Max.Float(time), lerp);
+        }
+    }
+
+    public struct MinMaxGradient : IComponentData
     {
         public GradientRangeMode Mode;
         public float4 ColorMin;
         public float4 ColorMax;
-        public GradientSampler Max;
-        public GradientSampler Min;
+        public BlobAssetReference<MinMaxGradientSampler> Sampler;
 
         public float4 Evaluate(float t, float lerpFactor)
         {
@@ -35,31 +50,39 @@ namespace Partity
             {
                 case GradientRangeMode.Color: return ColorMax;
                 case GradientRangeMode.TwoColors: return math.lerp(ColorMin, ColorMax, lerpFactor);
-                case GradientRangeMode.TwoGradients: return math.lerp(Sample(ref Min, t), Sample(ref Max, t), lerpFactor);
-                case GradientRangeMode.RandomColor: return Sample(ref Max, lerpFactor);
-                default: return Sample(ref Max, t);
+                case GradientRangeMode.TwoGradients: return Sampler.Value.Float(t, lerpFactor);
+                case GradientRangeMode.RandomColor: return Sampler.Value.Max.Float(lerpFactor);
+                default: return Sampler.Value.Max.Float(t);
             }
         }
 
-        static float4 Sample(ref GradientSampler s, float t) => new float4(s.Color.Vec3(t), s.Alpha.Float(t));
-    }
-
 #if UNITY_EDITOR
-    public static class MinMaxGradientExtensions
-    {
-        public static BlobAssetReference<MinMaxGradientBlob> ToBlob(this ParticleSystem.MinMaxGradient mmg)
+        public static implicit operator MinMaxGradient(ParticleSystem.MinMaxGradient mmg)
         {
+            return new MinMaxGradient
+            {
+                Mode = (GradientRangeMode)(int)mmg.mode,
+                ColorMin = new float4(mmg.colorMin.r, mmg.colorMin.g, mmg.colorMin.b, mmg.colorMin.a),
+                ColorMax = new float4(mmg.colorMax.r, mmg.colorMax.g, mmg.colorMax.b, mmg.colorMax.a),
+                Sampler = ToSamplerBlob(mmg),
+            };
+        }
+
+        static BlobAssetReference<MinMaxGradientSampler> ToSamplerBlob(ParticleSystem.MinMaxGradient mmg)
+        {
+            var mode = (GradientRangeMode)(int)mmg.mode;
+            if (mode != GradientRangeMode.Gradient && mode != GradientRangeMode.TwoGradients && mode != GradientRangeMode.RandomColor)
+            {
+                return default;
+            }
             var builder = new BlobBuilder(Allocator.Temp);
-            ref var root = ref builder.ConstructRoot<MinMaxGradientBlob>();
-            root.Mode = (GradientRangeMode)(int)mmg.mode;
-            root.ColorMin = new float4(mmg.colorMin.r, mmg.colorMin.g, mmg.colorMin.b, mmg.colorMin.a);
-            root.ColorMax = new float4(mmg.colorMax.r, mmg.colorMax.g, mmg.colorMax.b, mmg.colorMax.a);
+            ref var root = ref builder.ConstructRoot<MinMaxGradientSampler>();
             BakeGradient(mmg.gradientMax, builder, ref root.Max);
-            if (mmg.mode == ParticleSystemGradientMode.TwoGradients)
+            if (mode == GradientRangeMode.TwoGradients)
             {
                 BakeGradient(mmg.gradientMin, builder, ref root.Min);
             }
-            return builder.CreateBlobAssetReference<MinMaxGradientBlob>(Allocator.Persistent);
+            return builder.CreateBlobAssetReference<MinMaxGradientSampler>(Allocator.Persistent);
         }
 
         static void BakeGradient(Gradient gradient, BlobBuilder builder, ref GradientSampler sampler)
@@ -93,6 +116,6 @@ namespace Partity
                 }
             }
         }
-    }
 #endif
+    }
 }

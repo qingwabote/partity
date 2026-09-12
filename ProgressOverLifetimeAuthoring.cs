@@ -6,7 +6,7 @@ namespace Partity
 {
     public struct ProgressOverLifetime : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> Curve;
+        public MinMaxCurve Curve;
     }
 
     [MaterialProperty("_Progress")]
@@ -27,7 +27,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Renderable);
                 AddComponent(entity, new ProgressOverLifetime
                 {
-                    Curve = authoring.Curve.ToBlob()
+                    Curve = authoring.Curve
                 });
                 AddComponent<MaterialPropertyProgress>(entity);
             }
@@ -44,7 +44,7 @@ namespace Partity
         {
             foreach (var (progress, lifetime, animation) in SystemAPI.Query<RefRW<MaterialPropertyProgress>, Lifetime, ProgressOverLifetime>().WithNone<Paused>())
             {
-                progress.ValueRW.Value = animation.Curve.Value.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
+                progress.ValueRW.Value = animation.Curve.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
             }
         }
     }

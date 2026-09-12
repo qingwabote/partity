@@ -8,9 +8,9 @@ namespace Partity
 {
     public struct ForceOverLifetime : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> X;
-        public BlobAssetReference<MinMaxCurveBlob> Y;
-        public BlobAssetReference<MinMaxCurveBlob> Z;
+        public MinMaxCurve X;
+        public MinMaxCurve Y;
+        public MinMaxCurve Z;
     }
 
 #if UNITY_EDITOR
@@ -27,9 +27,9 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
                 AddComponent(entity, new ForceOverLifetime
                 {
-                    X = authoring.X.ToBlob(),
-                    Y = authoring.Y.ToBlob(),
-                    Z = authoring.Z.ToBlob(),
+                    X = authoring.X,
+                    Y = authoring.Y,
+                    Z = authoring.Z,
                 });
             }
         }
@@ -54,9 +54,9 @@ namespace Partity
 
                 var t = lifetime.Time / lifetime.Life;
                 var f = new float3(
-                    force.X.Value.Evaluate(t, lifetime.Lerp),
-                    force.Y.Value.Evaluate(t, lifetime.Lerp),
-                    force.Z.Value.Evaluate(t, lifetime.Lerp));
+                    force.X.Evaluate(t, lifetime.Lerp),
+                    force.Y.Evaluate(t, lifetime.Lerp),
+                    force.Z.Evaluate(t, lifetime.Lerp));
                 var v = dir * spd + f * dt;
 
                 speed.ValueRW.Value = math.length(v);

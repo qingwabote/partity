@@ -14,42 +14,62 @@ namespace Partity
         TwoConstants = 3,
     }
 
-    public struct MinMaxCurveBlob
+    public struct MinMaxSampler
+    {
+        public Sampler Min;
+        public Sampler Max;
+
+        public float Float(float time, float lerp)
+        {
+            return math.lerp(Min.Float(time), Max.Float(time), lerp);
+        }
+    }
+
+    public struct MinMaxCurve : IComponentData
     {
         public CurveMode Mode;
         public float ConstantMin;
         public float ConstantMax;
-        public Sampler Max;
-        public Sampler Min;
+        public BlobAssetReference<MinMaxSampler> Sampler;
 
         public float Evaluate(float t, float lerpFactor)
         {
             switch (Mode)
             {
                 case CurveMode.Constant: return ConstantMax;
-                case CurveMode.TwoCurves: return math.lerp(Min.Float(t), Max.Float(t), lerpFactor);
+                case CurveMode.TwoCurves: return Sampler.Value.Float(t, lerpFactor);
                 case CurveMode.TwoConstants: return math.lerp(ConstantMin, ConstantMax, lerpFactor);
-                default: return Max.Float(t);
+                default: return Sampler.Value.Max.Float(t);
             }
         }
-    }
 
 #if UNITY_EDITOR
-    public static class MinMaxCurveExtensions
-    {
-        public static BlobAssetReference<MinMaxCurveBlob> ToBlob(this ParticleSystem.MinMaxCurve mmc)
+        public static implicit operator MinMaxCurve(ParticleSystem.MinMaxCurve mmc)
         {
+            return new MinMaxCurve
+            {
+                Mode = (CurveMode)(int)mmc.mode,
+                ConstantMin = mmc.constantMin,
+                ConstantMax = mmc.constantMax,
+                Sampler = ToSamplerBlob(mmc),
+            };
+        }
+
+        static BlobAssetReference<MinMaxSampler> ToSamplerBlob(ParticleSystem.MinMaxCurve mmc)
+        {
+            var mode = (CurveMode)(int)mmc.mode;
+            if (mode != CurveMode.Curve && mode != CurveMode.TwoCurves)
+            {
+                return default;
+            }
             var builder = new BlobBuilder(Allocator.Temp);
-            ref var root = ref builder.ConstructRoot<MinMaxCurveBlob>();
-            root.Mode = (CurveMode)(int)mmc.mode;
-            root.ConstantMin = mmc.constantMin;
-            root.ConstantMax = mmc.constantMax;
+            ref var root = ref builder.ConstructRoot<MinMaxSampler>();
             BakeCurve(mmc.curveMax, builder, ref root.Max, mmc.curveMultiplier);
-            if (mmc.mode == ParticleSystemCurveMode.TwoCurves)
+            if (mode == CurveMode.TwoCurves)
             {
                 BakeCurve(mmc.curveMin, builder, ref root.Min, mmc.curveMultiplier);
             }
-            return builder.CreateBlobAssetReference<MinMaxCurveBlob>(Allocator.Persistent);
+            return builder.CreateBlobAssetReference<MinMaxSampler>(Allocator.Persistent);
         }
 
         static void BakeCurve(AnimationCurve curve, BlobBuilder builder, ref Sampler sampler, float multiplier)

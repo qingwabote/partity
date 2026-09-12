@@ -6,7 +6,7 @@ namespace Partity
 {
     public struct ThresholdOverLifetime : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> Curve;
+        public MinMaxCurve Curve;
     }
 
     [MaterialProperty("_Threshold")]
@@ -27,7 +27,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Renderable);
                 AddComponent(entity, new ThresholdOverLifetime
                 {
-                    Curve = authoring.Curve.ToBlob()
+                    Curve = authoring.Curve
                 });
                 AddComponent<MaterialPropertyThreshold>(entity);
             }
@@ -44,7 +44,7 @@ namespace Partity
         {
             foreach (var (threshold, lifetime, animation) in SystemAPI.Query<RefRW<MaterialPropertyThreshold>, Lifetime, ThresholdOverLifetime>().WithNone<Paused>())
             {
-                threshold.ValueRW.Value = animation.Curve.Value.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
+                threshold.ValueRW.Value = animation.Curve.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
             }
         }
     }

@@ -4,7 +4,7 @@ namespace Partity
 {
     public struct StartLifetime : IComponentData
     {
-        public BlobAssetReference<MinMaxCurveBlob> Curve;
+        public MinMaxCurve Curve;
     }
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
@@ -16,7 +16,7 @@ namespace Partity
         {
             foreach (var (lifetime, start) in SystemAPI.Query<RefRW<Lifetime>, StartLifetime>().WithAll<Nudge>())
             {
-                lifetime.ValueRW.Life = start.Curve.Value.Evaluate(0f, lifetime.ValueRO.Lerp);
+                lifetime.ValueRW.Life = start.Curve.Evaluate(0f, lifetime.ValueRO.Lerp);
             }
         }
     }

@@ -14,6 +14,7 @@ namespace Partity
         public float Lerp;
     }
 
+#if UNITY_EDITOR
     public class LifetimeAuthoring : MonoBehaviour
     {
         public ParticleSystem.MinMaxCurve Life = new ParticleSystem.MinMaxCurve(1f);
@@ -29,11 +30,12 @@ namespace Partity
                 });
                 AddComponent(entity, new StartLifetime
                 {
-                    Curve = authoring.Life.ToBlob()
+                    Curve = authoring.Life
                 });
             }
         }
     }
+#endif
 
     [UpdateInGroup(typeof(SimulationSystemGroup), OrderFirst = true)]
     [RequireMatchingQueriesForUpdate]

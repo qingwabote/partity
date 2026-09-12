@@ -6,7 +6,7 @@ namespace Partity
 {
     public struct StartColor : IComponentData
     {
-        public BlobAssetReference<MinMaxGradientBlob> Gradient;
+        public MinMaxGradient Gradient;
     }
 
 #if UNITY_EDITOR
@@ -19,7 +19,7 @@ namespace Partity
             public override void Bake(StartColorAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Renderable);
-                AddComponent(entity, new StartColor { Gradient = authoring.Color.ToBlob() });
+                AddComponent(entity, new StartColor { Gradient = authoring.Color });
                 AddComponent<URPMaterialPropertyBaseColor>(entity);
             }
         }
@@ -36,7 +36,7 @@ namespace Partity
             foreach (var (baseColor, start, lifetime) in
                 SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, StartColor, Lifetime>().WithAll<Nudge>())
             {
-                baseColor.ValueRW.Value = start.Gradient.Value.Evaluate(0f, lifetime.Lerp);
+                baseColor.ValueRW.Value = start.Gradient.Evaluate(0f, lifetime.Lerp);
             }
         }
     }
