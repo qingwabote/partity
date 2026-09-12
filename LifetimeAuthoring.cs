@@ -15,9 +15,14 @@ namespace Partity
     }
 
 #if UNITY_EDITOR
+    /// <summary>
+    /// Authoring for a bare <see cref="Lifetime"/>: the entity tracks its own age and is destroyed when it expires.
+    /// Unlike <see cref="StartLifetimeAuthoring"/>, there is no birth-time curve and no Nudge initialization, so a
+    /// Life value set at runtime (e.g. per weapon level) is never overwritten.
+    /// </summary>
     public class LifetimeAuthoring : MonoBehaviour
     {
-        public ParticleSystem.MinMaxCurve Life = new ParticleSystem.MinMaxCurve(1f);
+        public float Life = 1f;
 
         class Baker : Baker<LifetimeAuthoring>
         {
@@ -26,11 +31,7 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Renderable);
                 AddComponent(entity, new Lifetime
                 {
-                    Life = 0f
-                });
-                AddComponent(entity, new StartLifetime
-                {
-                    Curve = authoring.Life
+                    Life = authoring.Life
                 });
             }
         }
