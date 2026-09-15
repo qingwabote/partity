@@ -95,7 +95,6 @@ namespace Partity
         {
             foreach (var (emitter, buffer, world) in
                 SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld>()
-                    .WithNone<Paused>()
                     .WithOptions(EntityQueryOptions.FilterWriteGroup))
             {
                 var e = emitter.ValueRO;

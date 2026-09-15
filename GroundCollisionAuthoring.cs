@@ -44,7 +44,7 @@ namespace Partity
         public void OnUpdate(ref SystemState state)
         {
             foreach (var (transform, speed, direction, collision) in
-                SystemAPI.Query<RefRW<LocalTransform>, RefRW<Speed>, RefRW<Direction>, GroundCollision>().WithNone<Paused>())
+                SystemAPI.Query<RefRW<LocalTransform>, RefRW<Speed>, RefRW<Direction>, GroundCollision>())
             {
                 var radius = 0.5f * transform.ValueRO.Scale * collision.RadiusScale;
                 if (transform.ValueRO.Position.y >= radius) continue;

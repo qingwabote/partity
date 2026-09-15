@@ -50,13 +50,13 @@ namespace Partity
             var dt = SystemAPI.Time.DeltaTime;
 
             foreach (var (transform, speed, direction, localSpace) in
-                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction, LocalSpace>().WithNone<Paused>())
+                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction, LocalSpace>())
             {
                 transform.ValueRW.Position += math.rotate(localSpace.Rotation, speed.Value * localSpace.Scale * dt * direction.Value);
             }
 
             foreach (var (transform, speed, direction) in
-                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction>().WithNone<LocalSpace, Paused>())
+                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction>().WithNone<LocalSpace>())
             {
                 transform.ValueRW.Position += speed.Value * dt * direction.Value;
             }

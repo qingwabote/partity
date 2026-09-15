@@ -42,7 +42,7 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (threshold, lifetime, animation) in SystemAPI.Query<RefRW<MaterialPropertyThreshold>, Lifetime, ThresholdOverLifetime>().WithNone<Paused>())
+            foreach (var (threshold, lifetime, animation) in SystemAPI.Query<RefRW<MaterialPropertyThreshold>, Lifetime, ThresholdOverLifetime>())
             {
                 threshold.ValueRW.Value = animation.Curve.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
             }

@@ -27,7 +27,7 @@ namespace Partity
             var em = state.EntityManager;
 
             foreach (var (buffer, emitter, world, entity) in
-                SystemAPI.Query<DynamicBuffer<Emission>, Emitter, LocalToWorld>().WithNone<Paused>().WithEntityAccess())
+                SystemAPI.Query<DynamicBuffer<Emission>, Emitter, LocalToWorld>().WithEntityAccess())
             {
                 if (buffer.Length == 0) continue;
 

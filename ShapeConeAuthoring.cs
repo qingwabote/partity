@@ -71,7 +71,7 @@ namespace Partity
         public void OnUpdate(ref SystemState state)
         {
             foreach (var (emitter, buffer, cone, transform) in
-                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, ShapeCone, ShapeTransform>().WithNone<Paused>())
+                SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, ShapeCone, ShapeTransform>())
             {
                 var e = emitter.ValueRO;
                 if (e.Payload <= 0) continue;

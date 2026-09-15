@@ -68,7 +68,7 @@ namespace Partity
             var dt = SystemAPI.Time.DeltaTime;
             var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
 
-            foreach (var (lifetime, entity) in SystemAPI.Query<RefRW<Lifetime>>().WithNone<Paused>().WithEntityAccess())
+            foreach (var (lifetime, entity) in SystemAPI.Query<RefRW<Lifetime>>().WithEntityAccess())
             {
                 var lt = lifetime.ValueRO;
                 lt.Time = math.min(lt.Time + dt, lt.Life);

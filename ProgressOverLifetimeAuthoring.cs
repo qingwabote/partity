@@ -42,7 +42,7 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (progress, lifetime, animation) in SystemAPI.Query<RefRW<MaterialPropertyProgress>, Lifetime, ProgressOverLifetime>().WithNone<Paused>())
+            foreach (var (progress, lifetime, animation) in SystemAPI.Query<RefRW<MaterialPropertyProgress>, Lifetime, ProgressOverLifetime>())
             {
                 progress.ValueRW.Value = animation.Curve.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp);
             }

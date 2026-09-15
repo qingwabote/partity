@@ -52,7 +52,7 @@ namespace Partity
             var dt = SystemAPI.Time.DeltaTime;
 
             foreach (var (config, emitter) in
-                SystemAPI.Query<RefRW<EmitOnTime>, RefRW<Emitter>>().WithNone<Paused>())
+                SystemAPI.Query<RefRW<EmitOnTime>, RefRW<Emitter>>())
             {
                 var c = config.ValueRO;
 

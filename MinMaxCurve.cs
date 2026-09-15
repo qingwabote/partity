@@ -87,6 +87,6 @@ namespace Partity
                 values[i] = curve[i].value * multiplier;
             }
         }
-    }
 #endif
+    }
 }
