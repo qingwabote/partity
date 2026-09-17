@@ -36,7 +36,7 @@ namespace Partity
 #endif
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(LifetimeSystem))]
+    [UpdateAfter(typeof(LifetimeStepSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct ProgressOverLifetimeSystem : ISystem
     {

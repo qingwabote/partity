@@ -1,10 +1,19 @@
+using Unity.Burst;
+using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
 using UnityEngine;
 
 namespace Partity
 {
-    public struct Lifetime : IComponentData
+    /// <summary>
+    /// Per-entity age and expiry. ENABLED = alive and ticking (Time accumulates toward Life).
+    /// DISABLED = destruction requested (expiry, or an explicit kill); the entity is destroyed by
+    /// <see cref="LifetimeEndSystem"/>, unless another destroy authority claims it via a write group on
+    /// this component (write group filtering is presence-based, so a claimant component excludes the
+    /// entity regardless of the enabled state).
+    /// </summary>
+    public struct Lifetime : IComponentData, IEnableableComponent
     {
         public float Life;
         public float Time;
@@ -58,27 +67,48 @@ namespace Partity
         }
     }
 
+    /// <summary>
+    /// Ticks <see cref="Lifetime.Time"/> toward <see cref="Lifetime.Life"/> for alive (enabled)
+    /// entities and marks expiry by disabling the component. Destruction itself is
+    /// <see cref="LifetimeEndSystem"/>'s job, so claimed entities can route to their own destroy path.
+    /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(StartLifetimeSystem))]
     [RequireMatchingQueriesForUpdate]
-    public partial struct LifetimeSystem : ISystem
+    public partial struct LifetimeStepSystem : ISystem
     {
+        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
             var dt = SystemAPI.Time.DeltaTime;
-            var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
 
-            foreach (var (lifetime, entity) in SystemAPI.Query<RefRW<Lifetime>>().WithEntityAccess())
+            foreach (var (lifetime, enabled) in SystemAPI.Query<RefRW<Lifetime>, EnabledRefRW<Lifetime>>())
             {
                 var lt = lifetime.ValueRO;
                 lt.Time = math.min(lt.Time + dt, lt.Life);
                 lifetime.ValueRW.Time = lt.Time;
 
                 if (lt.Time >= lt.Life)
-                    ecb.DestroyEntity(entity);
+                {
+                    enabled.ValueRW = false;
+                }
             }
+        }
+    }
 
-            ecb.Playback(state.EntityManager);
+    [UpdateInGroup(typeof(SimulationSystemGroup), OrderLast = true)]
+    [UpdateBefore(typeof(EndSimulationEntityCommandBufferSystem))]
+    [RequireMatchingQueriesForUpdate]
+    public partial struct LifetimeEndSystem : ISystem
+    {
+        [BurstCompile]
+        public void OnUpdate(ref SystemState state)
+        {
+            var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
+
+            // Destroy per entity rather than via a query capture: a query destroy requires every
+            // entity of a destroyed entity's LinkedEntityGroup to be included in the query itself.
+            ecb.DestroyEntity(SystemAPI.QueryBuilder().WithDisabledRW<Lifetime>().WithOptions(EntityQueryOptions.FilterWriteGroup).Build().ToEntityArray(Allocator.Temp));
         }
     }
 }

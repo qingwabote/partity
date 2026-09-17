@@ -45,7 +45,7 @@ namespace Partity
     }
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(LifetimeSystem))]
+    [UpdateAfter(typeof(LifetimeStepSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct SizeOverLifetimeSystem : ISystem
     {

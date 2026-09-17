@@ -36,7 +36,7 @@ namespace Partity
 #endif
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(LifetimeSystem))]
+    [UpdateAfter(typeof(LifetimeStepSystem))]
     [UpdateBefore(typeof(TransformSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct RotationOverLifetimeSystem : ISystem
