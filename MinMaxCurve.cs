@@ -1,4 +1,3 @@
-using Graphix;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -6,12 +5,25 @@ using UnityEngine;
 
 namespace Partity
 {
-    public enum CurveMode
+    public struct Sampler
     {
-        Constant = 0,
-        Curve = 1,
-        TwoCurves = 2,
-        TwoConstants = 3,
+        public BlobArray<float> Times;
+        public BlobArray<float> Values;
+
+        public unsafe float Float(float time)
+        {
+            return Bastard.Sampler.Float((float*)Times.GetUnsafePtr(), (float*)Values.GetUnsafePtr(), Times.Length, time);
+        }
+
+        public unsafe float3 Vec3(float time)
+        {
+            return Bastard.Sampler.Vec3((float*)Times.GetUnsafePtr(), (float3*)Values.GetUnsafePtr(), Times.Length, time);
+        }
+
+        public unsafe quaternion Quat(float time)
+        {
+            return Bastard.Sampler.Quat((float*)Times.GetUnsafePtr(), (quaternion*)Values.GetUnsafePtr(), Times.Length, time);
+        }
     }
 
     public struct MinMaxSampler
@@ -23,6 +35,14 @@ namespace Partity
         {
             return math.lerp(Min.Float(time), Max.Float(time), lerp);
         }
+    }
+
+    public enum CurveMode
+    {
+        Constant = 0,
+        Curve = 1,
+        TwoCurves = 2,
+        TwoConstants = 3,
     }
 
     public struct MinMaxCurve : IComponentData

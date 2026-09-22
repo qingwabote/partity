@@ -1,6 +1,6 @@
 {
   "name": "partity",
-  "description": "A particle system based on entity",
+  "description": "An ecs particle system based on entities",
   "version": "0.0.1",
   "unity": "2022.3",
   "displayName": "Partity"
