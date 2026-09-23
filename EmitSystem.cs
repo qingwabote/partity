@@ -31,8 +31,8 @@ namespace Partity
             {
                 if (buffer.Length == 0) continue;
 
-                var hasStartLifetimeOverride = em.HasComponent<StartLifetimeOverride>(entity);
-                var startLifetimeOverride = hasStartLifetimeOverride ? em.GetComponentData<StartLifetimeOverride>(entity) : default;
+                var hasStartLifetimeOverride = em.HasComponent<LifetimeOverride>(entity);
+                var startLifetimeOverride = hasStartLifetimeOverride ? em.GetComponentData<LifetimeOverride>(entity) : default;
 
                 var hasPtm = em.HasComponent<PostTransformMatrix>(emitter.ParticlePrefab);
                 var prefabPtm = hasPtm ? em.GetComponentData<PostTransformMatrix>(emitter.ParticlePrefab).Value : float4x4.identity;
@@ -87,7 +87,14 @@ namespace Partity
                     }
                     if (hasStartLifetimeOverride)
                     {
-                        ecb.SetComponent(p, new StartLifetime { Curve = startLifetimeOverride.Curve });
+                        if (em.HasComponent<StartLifetime>(emitter.ParticlePrefab))
+                        {
+                            ecb.SetComponent(p, new StartLifetime { Curve = startLifetimeOverride.Curve });
+                        }
+                        else
+                        {
+                            ecb.AddComponent(p, new StartLifetime { Curve = startLifetimeOverride.Curve });
+                        }
                     }
                 }
 

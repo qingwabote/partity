@@ -23,15 +23,22 @@ namespace Partity
         public float Lerp;
     }
 
+    public struct StartLifetime : IComponentData
+    {
+        public MinMaxCurve Curve;
+    }
+
 #if UNITY_EDITOR
     /// <summary>
-    /// Authoring for a bare <see cref="Lifetime"/>: the entity tracks its own age and is destroyed when it expires.
-    /// Unlike <see cref="StartLifetimeAuthoring"/>, there is no birth-time curve and no Nudge initialization, so a
-    /// Life value set at runtime (e.g. per weapon level) is never overwritten.
+    /// Authoring for a bare <see cref="Lifetime"/>: the entity tracks its own age and is destroyed when it
+    /// expires. A Constant <see cref="StartLifetime"/> bakes directly into <see cref="Lifetime.Life"/>; any
+    /// other mode bakes a <see cref="StartLifetime"/> curve that <see cref="StartLifetimeSystem"/> evaluates
+    /// at birth. In the Constant case nothing overwrites Life at runtime, so a value set per spawn (e.g. per
+    /// weapon level) survives.
     /// </summary>
     public class LifetimeAuthoring : MonoBehaviour
     {
-        public float Life = 1f;
+        public ParticleSystem.MinMaxCurve StartLifetime = new ParticleSystem.MinMaxCurve(1f);
 
         class Baker : Baker<LifetimeAuthoring>
         {
@@ -40,8 +47,10 @@ namespace Partity
                 var entity = GetEntity(TransformUsageFlags.Renderable);
                 AddComponent(entity, new Lifetime
                 {
-                    Life = authoring.Life
+                    Life = authoring.StartLifetime.mode == ParticleSystemCurveMode.Constant ? authoring.StartLifetime.constant : 0f,
                 });
+                if (authoring.StartLifetime.mode != ParticleSystemCurveMode.Constant)
+                    AddComponent(entity, new StartLifetime { Curve = authoring.StartLifetime });
             }
         }
     }
@@ -63,6 +72,20 @@ namespace Partity
             foreach (var lifetime in SystemAPI.Query<RefRW<Lifetime>>().WithAll<Nudge>())
             {
                 lifetime.ValueRW.Lerp = m_Random.NextFloat();
+            }
+        }
+    }
+
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(LifetimeLerpSystem))]
+    [RequireMatchingQueriesForUpdate]
+    public partial struct StartLifetimeSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            foreach (var (lifetime, start) in SystemAPI.Query<RefRW<Lifetime>, StartLifetime>().WithAll<Nudge>())
+            {
+                lifetime.ValueRW.Life = start.Curve.Evaluate(0f, lifetime.ValueRO.Lerp);
             }
         }
     }
