@@ -54,20 +54,28 @@ namespace Partity
                 default: return Sampler.Value.Max.Float(t);
             }
         }
+    }
 
 #if UNITY_EDITOR
-        public static implicit operator MinMaxGradient(ParticleSystem.MinMaxGradient mmg)
+    public static class MinMaxGradientExtensions
+    {
+        public static MinMaxGradient ToPartity(this ParticleSystem.MinMaxGradient mmg, float intensity)
         {
             return new MinMaxGradient
             {
                 Mode = (GradientRangeMode)(int)mmg.mode,
-                ColorMin = new float4(mmg.colorMin.r, mmg.colorMin.g, mmg.colorMin.b, mmg.colorMin.a),
-                ColorMax = new float4(mmg.colorMax.r, mmg.colorMax.g, mmg.colorMax.b, mmg.colorMax.a),
-                Sampler = ToSamplerBlob(mmg),
+                ColorMin = MulRgb(mmg.colorMin, intensity),
+                ColorMax = MulRgb(mmg.colorMax, intensity),
+                Sampler = ToSamplerBlob(mmg, intensity),
             };
         }
 
-        static BlobAssetReference<MinMaxGradientSampler> ToSamplerBlob(ParticleSystem.MinMaxGradient mmg)
+        static float4 MulRgb(Color color, float intensity)
+        {
+            return new float4(color.r * intensity, color.g * intensity, color.b * intensity, color.a);
+        }
+
+        static BlobAssetReference<MinMaxGradientSampler> ToSamplerBlob(ParticleSystem.MinMaxGradient mmg, float intensity)
         {
             var mode = (GradientRangeMode)(int)mmg.mode;
             if (mode != GradientRangeMode.Gradient && mode != GradientRangeMode.TwoGradients && mode != GradientRangeMode.RandomColor)
@@ -76,15 +84,15 @@ namespace Partity
             }
             var builder = new BlobBuilder(Allocator.Temp);
             ref var root = ref builder.ConstructRoot<MinMaxGradientSampler>();
-            BakeGradient(mmg.gradientMax, builder, ref root.Max);
+            BakeGradient(mmg.gradientMax, builder, ref root.Max, intensity);
             if (mode == GradientRangeMode.TwoGradients)
             {
-                BakeGradient(mmg.gradientMin, builder, ref root.Min);
+                BakeGradient(mmg.gradientMin, builder, ref root.Min, intensity);
             }
             return builder.CreateBlobAssetReference<MinMaxGradientSampler>(Allocator.Persistent);
         }
 
-        static void BakeGradient(Gradient gradient, BlobBuilder builder, ref GradientSampler sampler)
+        static void BakeGradient(Gradient gradient, BlobBuilder builder, ref GradientSampler sampler, float intensity)
         {
             int colorCount = gradient == null ? 0 : gradient.colorKeys.Length;
             int alphaCount = gradient == null ? 0 : gradient.alphaKeys.Length;
@@ -98,9 +106,9 @@ namespace Partity
                     var key = gradient.colorKeys[i];
                     times[i] = key.time;
                     var color = (Color)key.color;
-                    values[i * 3] = color.r;
-                    values[i * 3 + 1] = color.g;
-                    values[i * 3 + 2] = color.b;
+                    values[i * 3] = color.r * intensity;
+                    values[i * 3 + 1] = color.g * intensity;
+                    values[i * 3 + 2] = color.b * intensity;
                 }
             }
 
@@ -115,6 +123,6 @@ namespace Partity
                 }
             }
         }
-#endif
     }
+#endif
 }
