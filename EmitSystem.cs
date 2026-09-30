@@ -40,6 +40,12 @@ namespace Partity
                 var hasDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
                 var hasLocalSpace = em.HasComponent<LocalSpace>(emitter.ParticlePrefab);
 
+                var hasPrefabVoL = em.HasComponent<VelocityOverLifetime>(emitter.ParticlePrefab);
+                var prefabVoL = hasPrefabVoL ? em.GetComponentData<VelocityOverLifetime>(emitter.ParticlePrefab) : default;
+
+                var hasPrefabAlignment = em.HasComponent<VelocityAlignment>(emitter.ParticlePrefab);
+                var alignmentLengthScale = hasPrefabAlignment ? em.GetComponentData<VelocityAlignment>(emitter.ParticlePrefab).LengthScale : 1f;
+
                 var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
 
                 var emitterScale = math.length(world.Value.c0.xyz);
@@ -51,6 +57,8 @@ namespace Partity
 
                     var scale = emitterScale * offset.Scale;
                     var size = math.lerp(emitter.StartSize.Min, emitter.StartSize.Max, rng.NextFloat());
+                    if (hasPrefabAlignment)
+                        size = new float3(size.x, size.y, size.z * alignmentLengthScale); // stretch along local Z, the velocity axis once aligned
                     if (size.x == size.y && size.y == size.z)
                     {
                         scale *= size.x;
@@ -95,6 +103,18 @@ namespace Partity
                         {
                             ecb.AddComponent(p, new StartLifetime { Curve = startLifetimeOverride.Curve });
                         }
+                    }
+                    if (hasPrefabVoL)
+                    {
+                        // Shuriken's orbit center is system pivot + offset, in system-local space;
+                        // capture at emit (accepted divergence: Shuriken re-centers live).
+                        ecb.AddComponent(p, new OrbitCenter
+                        {
+                            Value = world.Value.c3.xyz + math.rotate(emitterRotation, new float3(
+                                prefabVoL.OrbitalOffsetX.Evaluate(0f, rng.NextFloat()),
+                                prefabVoL.OrbitalOffsetY.Evaluate(0f, rng.NextFloat()),
+                                prefabVoL.OrbitalOffsetZ.Evaluate(0f, rng.NextFloat()))),
+                        });
                     }
                 }
 

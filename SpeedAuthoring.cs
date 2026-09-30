@@ -83,14 +83,16 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
+            // FilterWriteGroup: motion modules in LocalTransform's write group
+            // (e.g. VelocityOverLifetime) integrate their own particles.
             foreach (var (transform, speed, direction, localSpace) in
-                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction, LocalSpace>())
+                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction, LocalSpace>().WithOptions(EntityQueryOptions.FilterWriteGroup))
             {
                 transform.ValueRW.Position += math.rotate(localSpace.Rotation, speed.Value * localSpace.Scale * dt * direction.Value);
             }
 
             foreach (var (transform, speed, direction) in
-                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction>().WithNone<LocalSpace>())
+                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction>().WithNone<LocalSpace>().WithOptions(EntityQueryOptions.FilterWriteGroup))
             {
                 transform.ValueRW.Position += speed.Value * dt * direction.Value;
             }
