@@ -6,10 +6,10 @@ using UnityEngine;
 namespace Partity
 {
     /// Shuriken renderer alignment = Velocity (P14's Mesh mode). Simulation never rotates a
-    /// particle for its motion; this render-parity pass points local +Z at the total velocity,
-    /// recomputed per frame via VelocityOverLifetimeSystem.LinearTotal plus the orbital
-    /// tangential term (no stored velocity component). Stretch along that axis, when needed,
-    /// comes from the prefab's calibrated PostTransformMatrix — not from here.
+    /// particle for its motion; this render-parity pass points local +Z at Velocity, the
+    /// particle's total velocity — no module references, whatever produced the velocity aligns.
+    /// Stretch along that axis, when needed, comes from the prefab's calibrated
+    /// PostTransformMatrix — not from here.
     public struct VelocityAlignment : IComponentData
     {
     }
@@ -29,28 +29,17 @@ namespace Partity
 #endif
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(OrbitalSystem))]
+    [UpdateAfter(typeof(VelocityOverLifetimeSystem))]
     [UpdateBefore(typeof(RotationOverLifetimeSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct VelocityAlignmentSystem : ISystem
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (transform, vol, speed, direction, center, particle, lifetime) in
-                SystemAPI.Query<RefRW<LocalTransform>, VelocityOverLifetime, RefRO<Speed>, RefRO<Direction>, RefRO<OrbitCenter>, RefRO<Particle>, Lifetime>().WithAll<VelocityAlignment>())
+            foreach (var (transform, velocity) in
+                SystemAPI.Query<RefRW<LocalTransform>, RefRO<Velocity>>().WithAll<VelocityAlignment>())
             {
-                var t = lifetime.Time / lifetime.Life;
-                var lerp = particle.ValueRO.Lerp;
-                var omega = new float3(vol.OrbitalX.Evaluate(t, lerp), vol.OrbitalY.Evaluate(t, lerp), vol.OrbitalZ.Evaluate(t, lerp));
-                var total = VelocityOverLifetimeSystem.LinearTotal(in vol, speed.ValueRO.Value * direction.ValueRO.Value, transform.ValueRO.Position, center.ValueRO.Value, t, lerp)
-                    + math.cross(omega, transform.ValueRO.Position - center.ValueRO.Value);
-                Align(ref transform.ValueRW, total);
-            }
-
-            foreach (var (transform, alignment, speed, direction) in
-                SystemAPI.Query<RefRW<LocalTransform>, VelocityAlignment, RefRO<Speed>, RefRO<Direction>>().WithNone<VelocityOverLifetime>())
-            {
-                Align(ref transform.ValueRW, speed.ValueRO.Value * direction.ValueRO.Value);
+                Align(ref transform.ValueRW, velocity.ValueRO.Value);
             }
         }
 

@@ -38,7 +38,7 @@ namespace Partity
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(LifetimeStepSystem))]
-    [UpdateBefore(typeof(MovementSystem))]
+    [UpdateBefore(typeof(VelocitySystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct ForceOverLifetimeSystem : ISystem
     {
