@@ -12,7 +12,7 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            var query = SystemAPI.QueryBuilder().WithAny<StartSpeed, StartLifetime, StartColor, SizeOverLifetime, ColorOverLifetime>()
+                var query = SystemAPI.QueryBuilder().WithAny<StartSpeed, StartLifetime, StartColor, SizeOverLifetime, ColorOverLifetime, VelocityOverLifetime>()
                 .WithOptions(EntityQueryOptions.IncludePrefab | EntityQueryOptions.IncludeDisabledEntities)
                 .Build();
             state.EntityManager.AddComponent(query, typeof(Nudge));

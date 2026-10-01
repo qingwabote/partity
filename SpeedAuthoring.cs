@@ -15,10 +15,9 @@ namespace Partity
         public float3 Value;
     }
 
+    /// Tag: Direction is interpreted in the emit-time emitter frame (see Particle).
     public struct LocalSpace : IComponentData
     {
-        public quaternion Rotation;
-        public float Scale;
     }
 
     public struct StartSpeed : IComponentData
@@ -45,7 +44,7 @@ namespace Partity
                 });
                 AddComponent(entity, new Direction { Value = new float3(0f, 0f, 1f) });
                 if (authoring.LocalSpace)
-                    AddComponent(entity, new LocalSpace { Rotation = quaternion.identity, Scale = 1f });
+                    AddComponent(entity, new LocalSpace());
                 if (authoring.StartSpeed.mode != ParticleSystemCurveMode.Constant)
                     AddComponent(entity, new StartSpeed { Curve = authoring.StartSpeed });
             }
@@ -85,10 +84,10 @@ namespace Partity
 
             // FilterWriteGroup: motion modules in LocalTransform's write group
             // (e.g. VelocityOverLifetime) integrate their own particles.
-            foreach (var (transform, speed, direction, localSpace) in
-                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction, LocalSpace>().WithOptions(EntityQueryOptions.FilterWriteGroup))
+            foreach (var (transform, speed, direction, particle) in
+                SystemAPI.Query<RefRW<LocalTransform>, Speed, Direction, RefRO<Particle>>().WithAll<LocalSpace>().WithOptions(EntityQueryOptions.FilterWriteGroup))
             {
-                transform.ValueRW.Position += math.rotate(localSpace.Rotation, speed.Value * localSpace.Scale * dt * direction.Value);
+                transform.ValueRW.Position += math.rotate(particle.ValueRO.Rotation, speed.Value * particle.ValueRO.Scale * dt * direction.Value);
             }
 
             foreach (var (transform, speed, direction) in

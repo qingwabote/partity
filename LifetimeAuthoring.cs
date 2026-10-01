@@ -17,10 +17,6 @@ namespace Partity
     {
         public float Life;
         public float Time;
-        /// <summary>
-        /// Random min/max curve blend factor, fixed at birth and constant across frames.
-        /// </summary>
-        public float Lerp;
     }
 
     public struct StartLifetime : IComponentData
@@ -56,36 +52,24 @@ namespace Partity
     }
 #endif
 
-    [UpdateInGroup(typeof(SimulationSystemGroup), OrderFirst = true)]
-    [RequireMatchingQueriesForUpdate]
-    public partial struct LifetimeLerpSystem : ISystem
-    {
-        private Unity.Mathematics.Random m_Random;
-
-        public void OnCreate(ref SystemState state)
-        {
-            m_Random = new Unity.Mathematics.Random(0x9E3779B1u);
-        }
-
-        public void OnUpdate(ref SystemState state)
-        {
-            foreach (var lifetime in SystemAPI.Query<RefRW<Lifetime>>().WithAll<Nudge>())
-            {
-                lifetime.ValueRW.Lerp = m_Random.NextFloat();
-            }
-        }
-    }
-
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(LifetimeLerpSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct StartLifetimeSystem : ISystem
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (lifetime, start) in SystemAPI.Query<RefRW<Lifetime>, StartLifetime>().WithAll<Nudge>())
+            foreach (var (lifetime, particle, start) in
+                SystemAPI.Query<RefRW<Lifetime>, RefRO<Particle>, StartLifetime>().WithAll<Nudge>())
             {
-                lifetime.ValueRW.Life = start.Curve.Evaluate(0f, lifetime.ValueRO.Lerp);
+                lifetime.ValueRW.Life = start.Curve.Evaluate(0f, particle.ValueRO.Lerp);
+            }
+
+            // The birth random lives on Particle; entities that are not particles resolve
+            // their curve deterministically at the lower bound.
+            foreach (var (lifetime, start) in
+                SystemAPI.Query<RefRW<Lifetime>, StartLifetime>().WithAll<Nudge>().WithNone<Particle>())
+            {
+                lifetime.ValueRW.Life = start.Curve.Evaluate(0f, 0f);
             }
         }
     }

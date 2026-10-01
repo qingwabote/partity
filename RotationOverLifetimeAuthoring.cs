@@ -45,14 +45,14 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (transform, rotation, lifetime) in
-                SystemAPI.Query<RefRW<LocalTransform>, RotationOverLifetime, Lifetime>())
+            foreach (var (transform, rotation, lifetime, particle) in
+                SystemAPI.Query<RefRW<LocalTransform>, RotationOverLifetime, Lifetime, Particle>())
             {
                 var t = lifetime.Time / lifetime.Life;
                 var r = new float3(
-                    rotation.X.Evaluate(t, lifetime.Lerp),
-                    rotation.Y.Evaluate(t, lifetime.Lerp),
-                    rotation.Z.Evaluate(t, lifetime.Lerp)) * dt;
+                    rotation.X.Evaluate(t, particle.Lerp),
+                    rotation.Y.Evaluate(t, particle.Lerp),
+                    rotation.Z.Evaluate(t, particle.Lerp)) * dt;
                 transform.ValueRW.Rotation = math.mul(transform.ValueRW.Rotation, quaternion.EulerZXY(r));
             }
 

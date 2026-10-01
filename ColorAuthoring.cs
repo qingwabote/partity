@@ -38,16 +38,15 @@ namespace Partity
 #endif
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(LifetimeLerpSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct StartColorSystem : ISystem
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (baseColor, start, lifetime) in
-                SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, StartColor, Lifetime>().WithAll<Nudge>())
+            foreach (var (baseColor, start, particle) in
+                SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, StartColor, Particle>().WithAll<Nudge>())
             {
-                baseColor.ValueRW.Value = start.Gradient.Evaluate(0f, lifetime.Lerp);
+                baseColor.ValueRW.Value = start.Gradient.Evaluate(0f, particle.Lerp);
             }
         }
     }

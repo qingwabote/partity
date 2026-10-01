@@ -29,8 +29,10 @@ namespace Partity
         public MinMaxCurve SpeedModifier;
     }
 
-    /// Orbit center, captured at emit: emitter world position + emitter-rotated OrbitalOffset.
-    /// (Shuriken re-centers live as the system moves; capture-at-emit is the accepted divergence.)
+    /// Orbit center. Baked as a default so particles are born with their final archetype;
+    /// filled on the particle's first frame by OrbitCenterSystem (Nudge-gated) from the
+    /// emit-time Particle frame (emitter world position + emitter-rotated OrbitalOffset).
+    /// Shuriken re-centers live as the system moves; capture-at-emit is the accepted divergence.
     public struct OrbitCenter : IComponentData
     {
         public float3 Value;
@@ -75,10 +77,41 @@ namespace Partity
                     Radial = authoring.Radial,
                     SpeedModifier = authoring.SpeedModifier,
                 });
+                AddComponent(entity, new OrbitCenter());
             }
         }
     }
 #endif
+
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateBefore(typeof(ForceOverLifetimeSystem))]
+    [RequireMatchingQueriesForUpdate]
+    public partial struct OrbitCenterSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            // Spawn frame only (Nudge): the baker already stamped a default OrbitCenter, so
+            // this pass is a pure data write — no structural change, no archetype migration.
+            // Lerp comes from Particle, so Lifetime is not needed here at all.
+            foreach (var (center, vol, particle) in
+                SystemAPI.Query<RefRW<OrbitCenter>, RefRO<VelocityOverLifetime>, RefRO<Particle>>().WithAll<Nudge>())
+            {
+                center.ValueRW = Capture(in vol.ValueRO, in particle.ValueRO, particle.ValueRO.Lerp);
+            }
+        }
+
+        // Particle froze the emit-time context, so capturing on the first frame instead
+        // of inside EmitSystem is semantically identical — and keeps the generic spawner
+        // unaware of the module (the write-group argument, applied to the spawn path).
+        static OrbitCenter Capture(in VelocityOverLifetime vol, in Particle particle, float lerp)
+        {
+            var offset = new float3(
+                vol.OrbitalOffsetX.Evaluate(0f, lerp),
+                vol.OrbitalOffsetY.Evaluate(0f, lerp),
+                vol.OrbitalOffsetZ.Evaluate(0f, lerp));
+            return new OrbitCenter { Value = particle.Position + math.rotate(particle.Rotation, offset) };
+        }
+    }
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(ForceOverLifetimeSystem))]
@@ -91,10 +124,10 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (transform, vol, speed, direction, center, lifetime) in
-                SystemAPI.Query<RefRW<LocalTransform>, VelocityOverLifetime, RefRO<Speed>, RefRO<Direction>, RefRO<OrbitCenter>, Lifetime>().WithOptions(EntityQueryOptions.FilterWriteGroup))
+            foreach (var (transform, vol, speed, direction, center, particle, lifetime) in
+                SystemAPI.Query<RefRW<LocalTransform>, VelocityOverLifetime, RefRO<Speed>, RefRO<Direction>, RefRO<OrbitCenter>, RefRO<Particle>, Lifetime>().WithOptions(EntityQueryOptions.FilterWriteGroup))
             {
-                transform.ValueRW.Position += LinearTotal(in vol, speed.ValueRO.Value * direction.ValueRO.Value, transform.ValueRO.Position, center.ValueRO.Value, lifetime.Time / lifetime.Life, lifetime.Lerp) * dt;
+                transform.ValueRW.Position += LinearTotal(in vol, speed.ValueRO.Value * direction.ValueRO.Value, transform.ValueRO.Position, center.ValueRO.Value, lifetime.Time / lifetime.Life, particle.ValueRO.Lerp) * dt;
             }
 
             foreach (var (transform, vol, speed, direction, center) in
@@ -130,10 +163,10 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (transform, vol, center, lifetime) in
-                SystemAPI.Query<RefRW<LocalTransform>, VelocityOverLifetime, RefRO<OrbitCenter>, Lifetime>())
+            foreach (var (transform, vol, center, particle, lifetime) in
+                SystemAPI.Query<RefRW<LocalTransform>, VelocityOverLifetime, RefRO<OrbitCenter>, RefRO<Particle>, Lifetime>())
             {
-                Rotate(ref transform.ValueRW, in vol, center.ValueRO.Value, lifetime.Time / lifetime.Life, lifetime.Lerp, dt);
+                Rotate(ref transform.ValueRW, in vol, center.ValueRO.Value, lifetime.Time / lifetime.Life, particle.ValueRO.Lerp, dt);
             }
 
             foreach (var (transform, vol, center) in

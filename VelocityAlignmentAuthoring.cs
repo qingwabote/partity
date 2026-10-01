@@ -8,24 +8,21 @@ namespace Partity
     /// Shuriken renderer alignment = Velocity (P14's Mesh mode). Simulation never rotates a
     /// particle for its motion; this render-parity pass points local +Z at the total velocity,
     /// recomputed per frame via VelocityOverLifetimeSystem.LinearTotal plus the orbital
-    /// tangential term (no stored velocity component). LengthScale stretches the mesh along
-    /// that axis and is applied at emit (EmitSystem folds it into the spawn size).
+    /// tangential term (no stored velocity component). Stretch along that axis, when needed,
+    /// comes from the prefab's calibrated PostTransformMatrix — not from here.
     public struct VelocityAlignment : IComponentData
     {
-        public float LengthScale;
     }
 
 #if UNITY_EDITOR
     public class VelocityAlignmentAuthoring : MonoBehaviour
     {
-        [Min(0f)] public float LengthScale = 1f;
-
         class Baker : Baker<VelocityAlignmentAuthoring>
         {
             public override void Bake(VelocityAlignmentAuthoring authoring)
             {
                 var entity = GetEntity(TransformUsageFlags.Dynamic);
-                AddComponent(entity, new VelocityAlignment { LengthScale = authoring.LengthScale });
+                AddComponent(entity, new VelocityAlignment());
             }
         }
     }
@@ -39,11 +36,11 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (transform, alignment, vol, speed, direction, center, lifetime) in
-                SystemAPI.Query<RefRW<LocalTransform>, VelocityAlignment, VelocityOverLifetime, RefRO<Speed>, RefRO<Direction>, RefRO<OrbitCenter>, Lifetime>())
+            foreach (var (transform, vol, speed, direction, center, particle, lifetime) in
+                SystemAPI.Query<RefRW<LocalTransform>, VelocityOverLifetime, RefRO<Speed>, RefRO<Direction>, RefRO<OrbitCenter>, RefRO<Particle>, Lifetime>().WithAll<VelocityAlignment>())
             {
                 var t = lifetime.Time / lifetime.Life;
-                var lerp = lifetime.Lerp;
+                var lerp = particle.ValueRO.Lerp;
                 var omega = new float3(vol.OrbitalX.Evaluate(t, lerp), vol.OrbitalY.Evaluate(t, lerp), vol.OrbitalZ.Evaluate(t, lerp));
                 var total = VelocityOverLifetimeSystem.LinearTotal(in vol, speed.ValueRO.Value * direction.ValueRO.Value, transform.ValueRO.Position, center.ValueRO.Value, t, lerp)
                     + math.cross(omega, transform.ValueRO.Position - center.ValueRO.Value);

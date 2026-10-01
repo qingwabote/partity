@@ -51,10 +51,10 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (transform, lifetime, size) in
-                SystemAPI.Query<RefRW<LocalTransform>, Lifetime, SizeOverLifetime>())
+            foreach (var (transform, lifetime, size, particle) in
+                SystemAPI.Query<RefRW<LocalTransform>, Lifetime, SizeOverLifetime, Particle>())
             {
-                transform.ValueRW.Scale = size.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp) * size.Base;
+                transform.ValueRW.Scale = size.Evaluate(lifetime.Time / lifetime.Life, particle.Lerp) * size.Base;
             }
         }
     }

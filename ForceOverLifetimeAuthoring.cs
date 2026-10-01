@@ -46,17 +46,17 @@ namespace Partity
         {
             var dt = SystemAPI.Time.DeltaTime;
 
-            foreach (var (speed, direction, force, lifetime) in
-                SystemAPI.Query<RefRW<Speed>, RefRW<Direction>, ForceOverLifetime, Lifetime>())
+            foreach (var (speed, direction, force, lifetime, particle) in
+                SystemAPI.Query<RefRW<Speed>, RefRW<Direction>, ForceOverLifetime, Lifetime, Particle>())
             {
                 var dir = direction.ValueRO.Value;
                 var spd = speed.ValueRO.Value;
 
                 var t = lifetime.Time / lifetime.Life;
                 var f = new float3(
-                    force.X.Evaluate(t, lifetime.Lerp),
-                    force.Y.Evaluate(t, lifetime.Lerp),
-                    force.Z.Evaluate(t, lifetime.Lerp));
+                    force.X.Evaluate(t, particle.Lerp),
+                    force.Y.Evaluate(t, particle.Lerp),
+                    force.Z.Evaluate(t, particle.Lerp));
                 var v = dir * spd + f * dt;
 
                 speed.ValueRW.Value = math.length(v);
