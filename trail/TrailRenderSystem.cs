@@ -8,24 +8,17 @@ using UnityEngine.Rendering;
 namespace Partity
 {
     /// <summary>
-    /// Submits trail-carrying particles through bag batching — the particle entity itself, no
-    /// proxy: Batcher.Add registers each particle under its (material, mesh) from TrailParams;
-    /// Batcher.Dispose pulls LocalToWorld and every [MaterialProperty] component on the
-    /// particle's archetype automatically — _TrailData (ours) and _BaseColor
-    /// (URPMaterialPropertyBaseColor, kept current by partity's color systems: the ribbon
-    /// inherits the live particle color with zero trail-side plumbing). Per batch,
-    /// PropertyToBlock fills the MPB, then _TrailTex is set directly on the block — batch 是
-    /// ref readonly,调 bag 的 PropertyTextureBind 会写防御性拷贝,纹理绑不上(实例化隐形半天的
-    /// 根因)。纹理尺寸由引擎随 _TrailTex 绑定自动填充 _TrailTex_TexelSize。最后
-    /// Graphics.RenderMeshInstanced 单次提交。渲染时机在 BatchGroup(record 已写完当帧数据)。
+    /// No proxy: the trail rides the particle entity; bag collects LocalToWorld, _TrailData
+    /// and _BaseColor off the particle's own archetype, so the ribbon inherits the live
+    /// particle color with zero trail-side plumbing.
+    ///
+    /// _TrailTex is bound on the block directly on purpose: batch is ref readonly, so calling
+    /// bag's PropertyTextureBind would write a defensive copy and the texture would never
+    /// reach the GPU (the instanced-invisibility root cause). The engine fills
+    /// _TrailTex_TexelSize from the texture binding itself.
     ///
     /// A SystemBase because it owns the managed <see cref="TrailRegistry"/> as an instance
-    /// field: the render path is the registry's single consumer (the shader samples the
-    /// history texture), so it owns the resource's lifecycle — the simulation systems
-    /// (initialize/record/cleanup) are producers that write into it, reaching it via
-    /// World.GetExistingSystemManaged&lt;TrailRenderSystem&gt;().Registry. The registry is
-    /// created eagerly in OnCreate (never null); every world with BatchGroup carries one
-    /// 256KB texture for its lifetime.
+    /// field; the registry is created eagerly so producer systems never see null.
     /// </summary>
     [UpdateInGroup(typeof(BatchGroup))]
     [CreateAfter(typeof(BatchGroup))]
@@ -58,11 +51,10 @@ namespace Partity
         protected override void OnUpdate()
         {
             EntityManager.CompleteDependencyBeforeRO<LocalToWorld>();
-            EntityManager.CompleteDependencyBeforeRO<TrailState>();
-            EntityManager.CompleteDependencyBeforeRO<TrailRenderData>();
+            EntityManager.CompleteDependencyBeforeRO<TrailData>();
 
             var chunks = SystemAPI.QueryBuilder()
-                .WithAll<TrailParams, TrailState, TrailRenderData, LocalToWorld>()
+                .WithAll<TrailRenderer, TrailData, LocalToWorld>()
                 .Build()
                 .ToArchetypeChunkArray(Allocator.Temp);
             if (chunks.Length == 0)
@@ -71,8 +63,8 @@ namespace Partity
                 return;
             }
 
-            var paramsHandle = SystemAPI.GetComponentTypeHandle<TrailParams>(true);
-            var renderHandle = SystemAPI.GetComponentTypeHandle<TrailRenderData>(true);
+            var paramsHandle = SystemAPI.GetComponentTypeHandle<TrailRenderer>(true);
+            var renderHandle = SystemAPI.GetComponentTypeHandle<TrailData>(true);
             foreach (var chunk in chunks)
             {
                 using var batcher = m_Queue.Auto(chunk);
@@ -81,7 +73,7 @@ namespace Partity
                 var renders = chunk.GetNativeArray(ref renderHandle);
                 for (int i = 0; i < chunk.Count; i++)
                 {
-                    if (renders[i].Value.y < 2f)
+                    if (renders[i].LiveCount < 2f)
                         continue; // fewer than 2 points: no polyline to unfold
                     batcher.Add(allParams[i].Material, allParams[i].Mesh, i);
                 }

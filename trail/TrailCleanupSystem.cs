@@ -4,11 +4,9 @@ using Unity.Entities;
 namespace Partity
 {
     /// <summary>
-    /// Cleanup side of the cleanup-marker state machine: when a trail-carrying particle dies,
-    /// entity destruction strips every non-cleanup component — the ribbon vanishes that same
-    /// frame (dieWithParticles) — leaving a shell whose TrailCleanup carries the Slot. This
-    /// system returns it to the pool and lets the shell die. Slot accounting is exact; shell
-    /// disposal trails particle death by at most one frame.
+    /// Destruction strips every non-cleanup component but keeps this one — the shell exists
+    /// only so the Slot can reach the pool; removing it lets the shell die (dieWithParticles:
+    /// the ribbon vanishes with its head, same frame).
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(TrailRecordSystem))]
@@ -16,12 +14,11 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            // per-world registry (multi-world), owned by the render system; producers write into it
             var registry = state.World.GetExistingSystemManaged<TrailRenderSystem>().Registry;
 
             var shells = SystemAPI.QueryBuilder()
                 .WithAll<TrailCleanup>()
-                .WithNone<TrailParams>()
+                .WithNone<TrailRenderer>()
                 .Build()
                 .ToEntityArray(Allocator.Temp);
             foreach (var shell in shells)

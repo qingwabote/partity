@@ -5,17 +5,10 @@ using Unity.Mathematics;
 namespace Partity
 {
     /// <summary>
-    /// Init side of the cleanup-marker state machine: a fresh particle is TrailParams + dormant
-    /// baked state WITHOUT TrailCleanup — this system assigns its registry slot, stamps the
-    /// dormant values, and adds TrailCleanup (the "initialized" marker, later the death shell
-    /// reaped by <see cref="TrailCleanupSystem"/>). One structural change per spawn, by design:
-    /// cleanup components are stripped by entity scene baking, so the marker cannot be
-    /// pre-baked; the dormant TrailState/TrailRenderData still are, keeping the spawn cost to
-    /// this single add.
-    ///
-    /// A registry PRODUCER (AssignSlot, ring clearing on reuse) — the registry itself is owned
-    /// by its single consumer, <see cref="TrailRenderSystem"/>, which creates it eagerly in
-    /// OnCreate and never hands out null.
+    /// One structural change per spawn, by design: cleanup components are stripped by entity
+    /// scene baking, so the TrailCleanup marker cannot be pre-baked and its runtime add
+    /// doubles as the "initialized" detector — the dormant TrailState/TrailRenderData are
+    /// baked precisely to keep the spawn cost down to this single add.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateBefore(typeof(TrailRecordSystem))]
@@ -26,7 +19,7 @@ namespace Partity
             // snapshot first: the loop adds TrailCleanup (structural) and SystemAPI.Query
             // iteration forbids structural changes
             var heads = SystemAPI.QueryBuilder()
-                .WithAll<TrailParams>()
+                .WithAll<TrailRenderer>()
                 .WithNone<TrailCleanup>()
                 .Build()
                 .ToEntityArray(Allocator.Temp);
@@ -36,7 +29,6 @@ namespace Partity
                 return;
             }
 
-            // per-world registry (multi-world), owned by the render system
             var registry = state.World.GetExistingSystemManaged<TrailRenderSystem>().Registry;
 
             foreach (var head in heads)
@@ -52,14 +44,13 @@ namespace Partity
                 {
                     Slot = slot,
                     RingHead = -1,
-                    LiveCount = 0,
                     // sentinel: the first sample records unconditionally (the head's LTW is not
                     // computed yet, so there is no honest anchor to compare against)
                     LastPosition = new float3(float.MaxValue),
                 });
-                state.EntityManager.SetComponentData(head, new TrailRenderData
+                state.EntityManager.SetComponentData(head, new TrailData
                 {
-                    Value = new float4(slot * TrailRegistry.K - 1, 0f, 0f, 0f)
+                    HeadRow = slot * TrailRegistry.K - 1
                 });
                 state.EntityManager.AddComponentData(head, new TrailCleanup { Slot = slot });
             }
