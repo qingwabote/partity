@@ -1,11 +1,9 @@
-// Trailing/TrailRibbon — 紧凑流版:MPB 实例化(_TrailData 数组 + _TrailTex),流内线性寻址。
-// 流段由 CPU 每帧重建为 [tip, oldest … newest] 升序——TTL 切点、尾端消散全在 CPU 侧烘焙,
-// shader 无时钟;纹理尺寸由引擎随 _TrailTex 绑定自动填充 _TrailTex_TexelSize(同 graphix 路线)。
-Shader "Partity/TrailRibbon"
+Shader "Partity/Trail"
 {
     Properties
     {
-        _MainTex("Trail Texture", 2D) = "white" {}
+        _BaseColor("Base Color", Color) = (1, 1, 1, 1)
+        _BaseMap("Trail Texture", 2D) = "white" {}
     }
     SubShader
     {
@@ -39,8 +37,8 @@ Shader "Partity/TrailRibbon"
             SAMPLER(sampler_TrailTex);
             float4 _TrailTex_TexelSize; // (1/w,1/h,w,h) 引擎随 _TrailTex 绑定自动填充,不走 Properties/MPB
 
-            TEXTURE2D(_MainTex);
-            SAMPLER(sampler_MainTex); // 外观贴图(u=沿拖尾,v=横向),材质资产持有
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap); // 外观贴图(u=沿拖尾,v=横向),材质资产持有
 
             UNITY_INSTANCING_BUFFER_START(PerInstance)
                 UNITY_DEFINE_INSTANCED_PROP(float4, _TrailData)  // (base, count, width, spare)
@@ -58,7 +56,7 @@ Shader "Partity/TrailRibbon"
             {
                 float4 positionCS : SV_POSITION;
                 UNITY_VERTEX_INPUT_INSTANCE_ID // instance id to frag: _BaseColor read there
-                float2 uv : TEXCOORD0;   // (沿拖尾 u, 横向 side)——_MainTex 外观贴图用
+                float2 uv : TEXCOORD0;   // (沿拖尾 u, 横向 side)——_BaseMap 外观贴图用
             };
 
             float4 FetchPoint(int linearTexel)
@@ -122,7 +120,7 @@ Shader "Partity/TrailRibbon"
                 UNITY_SETUP_INSTANCE_ID(input);
                 half4 baseColor = UNITY_ACCESS_INSTANCED_PROP(PerInstance, _BaseColor);
                 baseColor.rgb *= baseColor.a;
-                return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv) * baseColor;
+                return SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * baseColor;
             }
             ENDHLSL
         }

@@ -1,3 +1,4 @@
+using Bastard;
 using Unity.Collections;
 using Unity.Entities;
 using Unity.Mathematics;
@@ -27,16 +28,20 @@ namespace Partity
     [UpdateAfter(typeof(TransformSystemGroup))]
     public partial struct TrailUpdateSystem : ISystem
     {
+        private static readonly Profile.Handle s_Profile = Profile.DefineEntry("Trail");
+
         /// <summary>
         /// Per-trail texel budget (rendered points, tip included) so one long trail cannot
         /// eat the stream. Deliberately neither the mesh segment count (the only fidelity
         /// knob) nor the buffer size (TrailStream.TexelCapacity) — K is free to differ from
         /// both without touching shader or material.
         /// </summary>
-        public const int Kmax = 64;
+        public const int Kmax = 128;
 
         public void OnUpdate(ref SystemState state)
         {
+            using var scope = s_Profile.Auto();
+
             var stream = state.World.GetExistingSystemManaged<TrailRenderSystem>().Stream;
             var oldTexels = stream.Read.Source.Value;
             var newTexels = stream.Write.Source.Value;

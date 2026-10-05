@@ -46,14 +46,10 @@ namespace Partity
         public float Spare;       // w 预留
     }
 
-    /// <summary>
-    /// TTL is derived at bake time because Shuriken's TrailModule.lifetime is a multiplier
-    /// over the particle lifetime, not seconds.
-    /// </summary>
     public class TrailRendererAuthoring : MonoBehaviour
     {
-        [Tooltip("Trail lifetime = particle StartLifetime x this (Shuriken TrailModule.lifetime semantics)")]
-        public float LifetimeMultiplier = 0.05f;
+        [Tooltip("Seconds a recorded trail point stays alive (TrailRenderer.time semantics)")]
+        public float Lifetime = 1f;
 
         [Tooltip("Minimum distance between recorded trail points (TrailRenderer.minVertexDistance)")]
         public float MinVertexDistance = 0.2f;
@@ -74,18 +70,13 @@ namespace Partity
         {
             public override void Bake(TrailRendererAuthoring authoring)
             {
-                // startLifetime lives on the sibling LifetimeAuthoring; constant mode covers the
-                // Projectile-14 profile, other modes approximate with the t=1 evaluation
-                var lifetime = GetComponent<LifetimeAuthoring>();
-                float startLifetime = lifetime != null ? lifetime.StartLifetime.Evaluate(1f) : 1f;
-
                 DependsOn(authoring.Mesh);
                 DependsOn(authoring.Material);
 
                 var entity = GetEntity(TransformUsageFlags.Renderable);
                 AddComponent(entity, new TrailRenderer
                 {
-                    Lifetime = authoring.LifetimeMultiplier * startLifetime,
+                    Lifetime = authoring.Lifetime,
                     MinVertexDistance = authoring.MinVertexDistance,
                     WidthOverTrail = authoring.WidthOverTrail,
                     Mesh = authoring.Mesh,
