@@ -10,18 +10,6 @@ namespace Partity
         public quaternion Rotation;
     }
 
-    /// The particle's main component: everything fixed at birth. Carries the emitter's
-    /// transform frozen at emit — the frame the particle was born in; LocalSpace motion
-    /// interprets Direction in it, VelocityOverLifetime captures its orbit center from it —
-    /// plus Lerp, the per-particle random that MinMax curves blend with. Never updated after emit.
-    public struct Particle : IComponentData
-    {
-        public float3 Position;
-        public quaternion Rotation;
-        public float Scale;
-        public float Lerp;
-    }
-
     [UpdateInGroup(typeof(ShapeSystemGroup), OrderLast = true)]
     [RequireMatchingQueriesForUpdate]
     public partial struct EmitSystem : ISystem
@@ -56,8 +44,6 @@ namespace Partity
 
                 var emitterScale = math.length(world.Value.c0.xyz);
                 var emitterRotation = world.Value.Rotation();
-
-                var particleBase = new Particle { Position = world.Value.c3.xyz, Rotation = emitterRotation, Scale = emitterScale };
 
                 foreach (var emission in buffer)
                 {
@@ -106,36 +92,15 @@ namespace Partity
                             ecb.AddComponent(p, new StartLifetime { Curve = startLifetimeOverride.Curve });
                         }
                     }
-                    // ParticleBakingSystem guarantees the component on every emitter's prefab;
-                    // a missing one means a stale bake and fails loudly here.
-                    particleBase.Lerp = m_Random.NextFloat();
-                    ecb.SetComponent(p, particleBase);
+
+                    if (hasLocalSpace)
+                    {
+                        ecb.SetComponent(p, new LocalSpace { Rotation = emitterRotation, Scale = emitterScale });
+                    }
                 }
 
                 buffer.Clear();
             }
         }
     }
-
-#if UNITY_EDITOR
-    /// Marks every prefab referenced by an Emitter as a particle, so instances are born with
-    /// their final archetype and EmitSystem only writes values (SetComponent) at spawn.
-    /// Same mechanism as NudgeBakingSystem: components added to prefab entities persist in
-    /// the bake; AddComponent on an already-marked prefab is a no-op.
-    [WorldSystemFilter(WorldSystemFilterFlags.BakingSystem)]
-    public partial struct ParticleBakingSystem : ISystem
-    {
-        public void OnUpdate(ref SystemState state)
-        {
-            var prefabs = new Unity.Collections.NativeList<Entity>(Unity.Collections.Allocator.Temp);
-            foreach (var emitter in SystemAPI.Query<RefRO<Emitter>>()
-                         .WithOptions(EntityQueryOptions.IncludePrefab | EntityQueryOptions.IncludeDisabledEntities))
-            {
-                if (emitter.ValueRO.ParticlePrefab != Entity.Null)
-                    prefabs.Add(emitter.ValueRO.ParticlePrefab);
-            }
-            state.EntityManager.AddComponent<Particle>(prefabs.AsArray());
-        }
-    }
-#endif
 }

@@ -51,9 +51,9 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (baseColor, lifetime, color, particle) in SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, Lifetime, ColorOverLifetime, Particle>())
+            foreach (var (baseColor, lifetime, color) in SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, Lifetime, ColorOverLifetime>())
             {
-                baseColor.ValueRW.Value = color.Gradient.Evaluate(lifetime.Time / lifetime.Life, particle.Lerp) * color.Base;
+                baseColor.ValueRW.Value = color.Gradient.Evaluate(lifetime.Time / lifetime.Life, lifetime.Lerp) * color.Base;
             }
         }
     }

@@ -45,11 +45,11 @@ namespace Partity
         {
             var deltaTime = SystemAPI.Time.DeltaTime;
 
-            foreach (var (speed, limitVelocity, lifetime, particle) in
-                SystemAPI.Query<RefRW<Speed>, LimitVelocityOverLifetime, Lifetime, Particle>())
+            foreach (var (speed, limitVelocity, lifetime) in
+                SystemAPI.Query<RefRW<Speed>, LimitVelocityOverLifetime, Lifetime>())
             {
                 var t = lifetime.Time / lifetime.Life;
-                var limit = limitVelocity.Limit.Evaluate(t, particle.Lerp);
+                var limit = limitVelocity.Limit.Evaluate(t, lifetime.Lerp);
 
                 var current = speed.ValueRO.Value;
                 // Target: the speed clamped to the limit; FInterpTo leaves it unchanged while within the limit

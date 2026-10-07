@@ -41,12 +41,19 @@ namespace Partity
     [RequireMatchingQueriesForUpdate]
     public partial struct StartColorSystem : ISystem
     {
+        private Unity.Mathematics.Random m_Random;
+
+        public void OnCreate(ref SystemState state)
+        {
+            m_Random = new Unity.Mathematics.Random(0x9E3779B3u);
+        }
+
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (baseColor, start, particle) in
-                SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, StartColor, Particle>().WithAll<Nudge>())
+            foreach (var (baseColor, start) in
+                SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, StartColor>().WithAll<Nudge>())
             {
-                baseColor.ValueRW.Value = start.Gradient.Evaluate(0f, particle.Lerp);
+                baseColor.ValueRW.Value = start.Gradient.Evaluate(0f, m_Random.NextFloat());
             }
         }
     }

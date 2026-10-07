@@ -15,8 +15,13 @@ namespace Partity
         public float3 Value;
     }
 
-    /// Tag: Direction is interpreted in the emit-time emitter frame (see Particle).
-    public struct LocalSpace : IComponentData { }
+    /// The emit-time emitter frame frozen at birth: Direction is authored in it, and
+    /// VelocityWorldSystem applies its rotation + scale to bring the lineage into world space.
+    public struct LocalSpace : IComponentData
+    {
+        public quaternion Rotation;
+        public float Scale;
+    }
 
     /// Shuriken Particle.totalVelocity equivalent: the velocity the solver integrates and the
     /// renderer aligns to. Seeded from the lineage (Speed × Direction) by VelocitySystem;
@@ -50,7 +55,7 @@ namespace Partity
                 });
                 AddComponent(entity, new Direction { Value = new float3(0f, 0f, 1f) });
                 if (authoring.LocalSpace)
-                    AddComponent(entity, new LocalSpace());
+                    AddComponent(entity, new LocalSpace { Rotation = quaternion.identity, Scale = 1f });
                 if (authoring.StartSpeed.mode != ParticleSystemCurveMode.Constant)
                     AddComponent(entity, new StartSpeed { Curve = authoring.StartSpeed });
             }
@@ -84,7 +89,6 @@ namespace Partity
     /// module chain runs (particle-system-renderer-cpu.ts); VelocityOverLifetimeSystem layers
     /// its terms on top of this seed.
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(LimitVelocityOverLifetimeSystem))]
     [UpdateBefore(typeof(MovementSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct VelocitySystem : ISystem
@@ -105,21 +109,21 @@ namespace Partity
     /// integrator, alignment, collision) reads a world-space Velocity and never adapts.
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(VelocitySystem))]
-    [UpdateBefore(typeof(VelocityOverLifetimeSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct VelocityWorldSystem : ISystem
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (velocity, particle) in
-                SystemAPI.Query<RefRW<Velocity>, RefRO<Particle>>().WithAll<LocalSpace>())
+            foreach (var (velocity, localSpace) in
+                SystemAPI.Query<RefRW<Velocity>, RefRO<LocalSpace>>())
             {
-                velocity.ValueRW.Value = math.rotate(particle.ValueRO.Rotation, velocity.ValueRO.Value) * particle.ValueRO.Scale;
+                velocity.ValueRW.Value = math.rotate(localSpace.ValueRO.Rotation, velocity.ValueRO.Value) * localSpace.ValueRO.Scale;
             }
         }
     }
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(VelocityWorldSystem))]
     [UpdateBefore(typeof(TransformSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct MovementSystem : ISystem

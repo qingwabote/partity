@@ -5,16 +5,9 @@ using UnityEngine;
 
 namespace Partity
 {
-    /// Shuriken Velocity over Lifetime. The particle's physical lineage velocity stays in
-    /// Speed + Direction; this module's linear term is a per-frame accumulator — cocos's
-    /// velocity / animatedVelocity / ultimateVelocity split (particle-system-renderer-cpu.ts),
-    /// with ultimate kept as a per-frame local. The module writes Velocity only, never
-    /// LocalTransform: MovementSystem is the sole position integrator, and the analytic
-    /// orbital rotation reaches it folded into the frame-exact velocity (see Step).
-    /// Center is per-instance runtime state: filled on the birth frame by OrbitCenterSystem
-    /// (Nudge-gated) from the emit-time Particle frame — the prefab copy stays default, each
-    /// instance's copy is its own. Shuriken re-centers live as the system moves;
-    /// capture-at-emit is the accepted divergence.
+    /// <summary>
+    /// A post-processor of Velocity
+    /// </summary>
     public struct VelocityOverLifetime : IComponentData
     {
         public MinMaxCurve X;
@@ -42,7 +35,7 @@ namespace Partity
         public ParticleSystem.MinMaxCurve OrbitalX;
         public ParticleSystem.MinMaxCurve OrbitalY;
         public ParticleSystem.MinMaxCurve OrbitalZ;
-        [Header("Orbital Offset (emitter-local)")]
+        [Header("Orbital Offset (birth-local)")]
         public ParticleSystem.MinMaxCurve OrbitalOffsetX;
         public ParticleSystem.MinMaxCurve OrbitalOffsetY;
         public ParticleSystem.MinMaxCurve OrbitalOffsetZ;
@@ -80,25 +73,32 @@ namespace Partity
     [RequireMatchingQueriesForUpdate]
     public partial struct OrbitCenterSystem : ISystem
     {
+        private Unity.Mathematics.Random m_Random;
+
+        public void OnCreate(ref SystemState state)
+        {
+            m_Random = new Unity.Mathematics.Random(0x9E3779B9u);
+        }
+
         public void OnUpdate(ref SystemState state)
         {
             // Spawn frame only (Nudge): Center is baked as a default, so this pass is a pure
-            // data write — no structural change, no archetype migration. Lerp comes from
-            // Particle, so Lifetime is not needed here at all.
-            foreach (var (vol, particle) in
-                SystemAPI.Query<RefRW<VelocityOverLifetime>, RefRO<Particle>>().WithAll<Nudge>())
+            // data write — no structural change, no archetype migration.
+            foreach (var (vol, transform) in
+                SystemAPI.Query<RefRW<VelocityOverLifetime>, RefRO<LocalTransform>>().WithAll<Nudge>())
             {
+                var lerp = m_Random.NextFloat();
                 var offset = new float3(
-                    vol.ValueRO.OrbitalOffsetX.Evaluate(0f, particle.ValueRO.Lerp),
-                    vol.ValueRO.OrbitalOffsetY.Evaluate(0f, particle.ValueRO.Lerp),
-                    vol.ValueRO.OrbitalOffsetZ.Evaluate(0f, particle.ValueRO.Lerp));
-                vol.ValueRW.Center = particle.ValueRO.Position + math.rotate(particle.ValueRO.Rotation, offset);
+                    vol.ValueRO.OrbitalOffsetX.Evaluate(0f, lerp),
+                    vol.ValueRO.OrbitalOffsetY.Evaluate(0f, lerp),
+                    vol.ValueRO.OrbitalOffsetZ.Evaluate(0f, lerp));
+                vol.ValueRW.Center = transform.ValueRO.Position + math.rotate(transform.ValueRO.Rotation, offset);
             }
         }
     }
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(VelocitySystem))]
+    [UpdateAfter(typeof(VelocityWorldSystem))]
     [UpdateBefore(typeof(MovementSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct VelocityOverLifetimeSystem : ISystem
@@ -109,10 +109,10 @@ namespace Partity
             if (dt <= 0f)
                 return; // the emitted velocity is a frame delta; a zero step has none
 
-            foreach (var (transform, velocity, vol, particle, lifetime) in
-                SystemAPI.Query<RefRO<LocalTransform>, RefRW<Velocity>, VelocityOverLifetime, RefRO<Particle>, Lifetime>())
+            foreach (var (transform, velocity, vol, lifetime) in
+                SystemAPI.Query<RefRO<LocalTransform>, RefRW<Velocity>, VelocityOverLifetime, Lifetime>())
             {
-                velocity.ValueRW = Step(in vol, velocity.ValueRO.Value, transform.ValueRO.Position, particle.ValueRO.Lerp, lifetime.Time / lifetime.Life, dt);
+                velocity.ValueRW = Step(in vol, velocity.ValueRO.Value, transform.ValueRO.Position, lifetime.Lerp, lifetime.Time / lifetime.Life, dt);
             }
 
             foreach (var (transform, velocity, vol) in
