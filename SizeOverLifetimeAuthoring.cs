@@ -12,6 +12,7 @@ namespace Partity
     }
 
 #if UNITY_EDITOR
+    [RequireComponent(typeof(LifetimeAuthoring))]
     public class SizeOverLifetimeAuthoring : MonoBehaviour
     {
         public ParticleSystem.MinMaxCurve Size = new ParticleSystem.MinMaxCurve(1f);
@@ -37,7 +38,7 @@ namespace Partity
         public void OnUpdate(ref SystemState state)
         {
             foreach (var (size, transform) in SystemAPI.Query<RefRW<SizeOverLifetime>, RefRO<LocalTransform>>()
-                         .WithAll<Nudge>())
+                         .WithAll<Newborn>())
             {
                 size.ValueRW.Base = transform.ValueRO.Scale;
             }

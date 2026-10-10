@@ -51,7 +51,7 @@ namespace Partity
         public void OnUpdate(ref SystemState state)
         {
             foreach (var (baseColor, start) in
-                SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, StartColor>().WithAll<Nudge>())
+                SystemAPI.Query<RefRW<URPMaterialPropertyBaseColor>, StartColor>().WithAll<Newborn>())
             {
                 baseColor.ValueRW.Value = start.Gradient.Evaluate(0f, m_Random.NextFloat());
             }

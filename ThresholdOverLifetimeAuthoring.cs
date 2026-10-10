@@ -16,6 +16,7 @@ namespace Partity
     }
 
 #if UNITY_EDITOR
+    [RequireComponent(typeof(LifetimeAuthoring))]
     public class ThresholdOverLifetimeAuthoring : MonoBehaviour
     {
         public ParticleSystem.MinMaxCurve Curve;

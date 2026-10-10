@@ -2,13 +2,15 @@ using Unity.Entities;
 
 namespace Partity
 {
-    public struct Nudge : IComponentData
+    public struct Newborn : IComponentData
     {
+        public Entity Emitter;
+        public int EmissionIndex;
     }
 
 #if UNITY_EDITOR
     [WorldSystemFilter(WorldSystemFilterFlags.BakingSystem)]
-    public partial struct NudgeBakingSystem : ISystem
+    public partial struct NewbornBakingSystem : ISystem
     {
         private EntityQuery m_Query;
 
@@ -36,18 +38,18 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            state.EntityManager.AddComponent(m_Query, typeof(Nudge));
+            state.EntityManager.AddComponent(m_Query, typeof(Newborn));
         }
     }
 #endif
 
     [UpdateInGroup(typeof(LateSimulationSystemGroup))]
     [RequireMatchingQueriesForUpdate]
-    public partial struct NudgeCleanupSystem : ISystem
+    public partial struct NewbornCleanupSystem : ISystem
     {
         public void OnUpdate(ref SystemState state)
         {
-            state.EntityManager.RemoveComponent(SystemAPI.QueryBuilder().WithAll<Nudge>().Build(), typeof(Nudge));
+            state.EntityManager.RemoveComponent(SystemAPI.QueryBuilder().WithAll<Newborn>().Build(), typeof(Newborn));
         }
     }
 }

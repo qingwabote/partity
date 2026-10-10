@@ -31,22 +31,17 @@ namespace Partity
             {
                 if (buffer.Length == 0) continue;
 
-                var hasStartLifetimeOverride = em.HasComponent<LifetimeOverride>(entity);
-                var startLifetimeOverride = hasStartLifetimeOverride ? em.GetComponentData<LifetimeOverride>(entity) : default;
-
                 var hasPtm = em.HasComponent<PostTransformMatrix>(emitter.ParticlePrefab);
                 var prefabPtm = hasPtm ? em.GetComponentData<PostTransformMatrix>(emitter.ParticlePrefab).Value : float4x4.identity;
-
-                var hasDirection = em.HasComponent<Direction>(emitter.ParticlePrefab);
-                var hasLocalSpace = em.HasComponent<LocalSpace>(emitter.ParticlePrefab);
 
                 var offset = em.GetComponentData<LocalTransform>(emitter.ParticlePrefab);
 
                 var emitterScale = math.length(world.Value.c0.xyz);
                 var emitterRotation = world.Value.Rotation();
 
-                foreach (var emission in buffer)
+                for (int i = 0; i < buffer.Length; i++)
                 {
+                    var emission = buffer[i];
                     var p = ecb.Instantiate(emitter.ParticlePrefab);
 
                     var scale = emitterScale * offset.Scale;
@@ -72,34 +67,8 @@ namespace Partity
                         Scale = scale
                     });
 
-                    if (hasDirection)
-                    {
-                        ecb.SetComponent(p, new Direction
-                        {
-                            Value = hasLocalSpace
-                                ? math.rotate(emission.Rotation, new float3(0f, 0f, 1f))
-                                : math.rotate(rotation, new float3(0f, 0f, 1f))
-                        });
-                    }
-                    if (hasStartLifetimeOverride)
-                    {
-                        if (em.HasComponent<StartLifetime>(emitter.ParticlePrefab))
-                        {
-                            ecb.SetComponent(p, new StartLifetime { Curve = startLifetimeOverride.Curve });
-                        }
-                        else
-                        {
-                            ecb.AddComponent(p, new StartLifetime { Curve = startLifetimeOverride.Curve });
-                        }
-                    }
-
-                    if (hasLocalSpace)
-                    {
-                        ecb.SetComponent(p, new LocalSpace { Rotation = emitterRotation, Scale = emitterScale });
-                    }
+                    ecb.AddComponent(p, new Newborn { Emitter = entity, EmissionIndex = i });
                 }
-
-                buffer.Clear();
             }
 
             ecb.Playback(state.EntityManager);

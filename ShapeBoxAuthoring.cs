@@ -55,6 +55,7 @@ namespace Partity
             foreach (var (emitter, buffer, box, transform) in
                 SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, ShapeBox, ShapeTransform>())
             {
+                buffer.Clear();
                 var e = emitter.ValueRO;
                 if (e.Payload <= 0) continue;
 

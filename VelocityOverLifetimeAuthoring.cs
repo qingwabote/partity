@@ -81,10 +81,10 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            // Spawn frame only (Nudge): Center is baked as a default, so this pass is a pure
+            // Spawn frame only (Newborn): Center is baked as a default, so this pass is a pure
             // data write — no structural change, no archetype migration.
             foreach (var (vol, transform) in
-                SystemAPI.Query<RefRW<VelocityOverLifetime>, RefRO<LocalTransform>>().WithAll<Nudge>())
+                SystemAPI.Query<RefRW<VelocityOverLifetime>, RefRO<LocalTransform>>().WithAll<Newborn>())
             {
                 var lerp = m_Random.NextFloat();
                 var offset = new float3(

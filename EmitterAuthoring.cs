@@ -97,6 +97,7 @@ namespace Partity
                 SystemAPI.Query<RefRW<Emitter>, DynamicBuffer<Emission>, LocalToWorld>()
                     .WithOptions(EntityQueryOptions.FilterWriteGroup))
             {
+                buffer.Clear();
                 var e = emitter.ValueRO;
                 if (e.Payload <= 0) continue;
 

@@ -13,6 +13,7 @@ namespace Partity
 
 #if UNITY_EDITOR
     [RequireComponent(typeof(ColorAuthoring))]
+    [RequireComponent(typeof(LifetimeAuthoring))]
     public class ColorOverLifetimeAuthoring : MonoBehaviour
     {
         public ParticleSystem.MinMaxGradient Color = new ParticleSystem.MinMaxGradient(UnityEngine.Color.white);
@@ -38,7 +39,7 @@ namespace Partity
     {
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (color, property) in SystemAPI.Query<RefRW<ColorOverLifetime>, RefRO<URPMaterialPropertyBaseColor>>().WithAll<Nudge>())
+            foreach (var (color, property) in SystemAPI.Query<RefRW<ColorOverLifetime>, RefRO<URPMaterialPropertyBaseColor>>().WithAll<Newborn>())
             {
                 color.ValueRW.Base = property.ValueRO.Value;
             }

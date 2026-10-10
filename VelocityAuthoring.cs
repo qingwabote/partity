@@ -76,9 +76,51 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            foreach (var (speed, start) in SystemAPI.Query<RefRW<Speed>, StartSpeed>().WithAll<Nudge>())
+            foreach (var (speed, start) in SystemAPI.Query<RefRW<Speed>, StartSpeed>().WithAll<Newborn>())
             {
                 speed.ValueRW.Value = start.Curve.Evaluate(0f, m_Random.NextFloat());
+            }
+        }
+    }
+
+    [UpdateInGroup(typeof(StartSystemGroup))]
+    [RequireMatchingQueriesForUpdate]
+    public partial struct StartDirectionSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            var em = state.EntityManager;
+            foreach (var (direction, ctx, entity) in
+                SystemAPI.Query<RefRW<Direction>, Newborn>().WithEntityAccess())
+            {
+                if (ctx.Emitter == Entity.Null) continue;
+
+                var rotation = em.GetBuffer<Emission>(ctx.Emitter)[ctx.EmissionIndex].Rotation;
+                if (!em.HasComponent<LocalSpace>(entity))
+                    rotation = math.mul(em.GetComponentData<LocalToWorld>(ctx.Emitter).Value.Rotation(), rotation);
+                direction.ValueRW.Value = math.rotate(rotation, new float3(0f, 0f, 1f));
+            }
+        }
+    }
+
+    [UpdateInGroup(typeof(StartSystemGroup))]
+    [RequireMatchingQueriesForUpdate]
+    public partial struct StartLocalSpaceSystem : ISystem
+    {
+        public void OnUpdate(ref SystemState state)
+        {
+            var em = state.EntityManager;
+            foreach (var (localSpace, ctx) in
+                SystemAPI.Query<RefRW<LocalSpace>, Newborn>())
+            {
+                if (ctx.Emitter == Entity.Null) continue;
+
+                var world = em.GetComponentData<LocalToWorld>(ctx.Emitter);
+                localSpace.ValueRW = new LocalSpace
+                {
+                    Rotation = world.Value.Rotation(),
+                    Scale = math.length(world.Value.c0.xyz),
+                };
             }
         }
     }
@@ -143,8 +185,7 @@ namespace Partity
 
 #if UNITY_EDITOR
     /// Pre-adds Velocity wherever the lineage pair (Speed + Direction) is baked, so instances
-    /// are born with their final archetype and VelocitySystem only writes values. Bulk query
-    /// add, like NudgeBakingSystem.
+    /// are born with their final archetype and VelocitySystem only writes values. Bulk query add.
     [WorldSystemFilter(WorldSystemFilterFlags.BakingSystem)]
     public partial struct VelocityBakingSystem : ISystem
     {

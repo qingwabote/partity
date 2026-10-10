@@ -12,6 +12,8 @@ namespace Partity
     }
 
 #if UNITY_EDITOR
+    [RequireComponent(typeof(LifetimeAuthoring))]
+    [RequireComponent(typeof(VelocityAuthoring))]
     public class LimitVelocityOverLifetimeAuthoring : MonoBehaviour
     {
         public ParticleSystem.MinMaxCurve Limit = new ParticleSystem.MinMaxCurve(1f);
