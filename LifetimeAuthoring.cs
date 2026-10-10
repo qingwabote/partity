@@ -56,7 +56,8 @@ namespace Partity
     }
 #endif
 
-    [UpdateInGroup(typeof(SimulationSystemGroup), OrderFirst = true)]
+    [UpdateInGroup(typeof(StartSystemGroup))]
+    [UpdateBefore(typeof(StartLifetimeSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct LifetimeLerpSystem : ISystem
     {
@@ -76,7 +77,7 @@ namespace Partity
         }
     }
 
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateInGroup(typeof(StartSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct StartLifetimeSystem : ISystem
     {
@@ -103,7 +104,6 @@ namespace Partity
     /// <see cref="LifetimeEndSystem"/>'s job, so claimed entities can route to their own destroy path.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(StartLifetimeSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct LifetimeStepSystem : ISystem
     {

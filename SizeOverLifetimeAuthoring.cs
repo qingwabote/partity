@@ -30,7 +30,7 @@ namespace Partity
     }
 #endif
 
-    [UpdateBefore(typeof(SizeOverLifetimeSystem))]
+    [UpdateInGroup(typeof(StartSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct SizeBaseSystem : ISystem
     {

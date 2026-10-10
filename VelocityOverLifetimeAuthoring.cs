@@ -68,8 +68,7 @@ namespace Partity
     }
 #endif
 
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateBefore(typeof(ForceOverLifetimeSystem))]
+    [UpdateInGroup(typeof(StartSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct OrbitCenterSystem : ISystem
     {

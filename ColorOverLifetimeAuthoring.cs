@@ -31,7 +31,8 @@ namespace Partity
     }
 #endif
 
-    [UpdateAfter(typeof(StartColorSystem)), UpdateBefore(typeof(ColorOverLifetimeSystem))]
+    [UpdateInGroup(typeof(StartSystemGroup))]
+    [UpdateAfter(typeof(StartColorSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct ColorBaseSystem : ISystem
     {

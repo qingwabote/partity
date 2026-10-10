@@ -37,7 +37,7 @@ namespace Partity
     }
 #endif
 
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateInGroup(typeof(StartSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct StartColorSystem : ISystem
     {

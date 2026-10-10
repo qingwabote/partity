@@ -23,7 +23,7 @@ namespace Partity
 
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = SystemAPI.GetSingleton<BeginInitializationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
+            var ecb = new EntityCommandBuffer(state.WorldUpdateAllocator);
             var em = state.EntityManager;
 
             foreach (var (buffer, emitter, world, entity) in
@@ -101,6 +101,8 @@ namespace Partity
 
                 buffer.Clear();
             }
+
+            ecb.Playback(state.EntityManager);
         }
     }
 }

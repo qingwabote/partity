@@ -63,8 +63,7 @@ namespace Partity
     }
 #endif
 
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateBefore(typeof(VelocitySystem))]
+    [UpdateInGroup(typeof(StartSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct StartSpeedSystem : ISystem
     {
