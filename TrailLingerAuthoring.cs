@@ -53,14 +53,13 @@ namespace Partity
 
     /// <summary>
     /// The dieWithParticles=false semantics for lifetime deaths. Death is a two-phase protocol
-    /// (LifetimeStep disables the component, LifetimeEndSystem destroys later in the frame), so
-    /// <c>WithDisabled&lt;Lifetime&gt;</c> inside that window is the only queryable "dying"
-    /// state — this system must live between the two. Placing it after TrailStreamBuilder
+    /// (LifetimeStep disables the component, LifetimeEndSystem destroys at the start of the
+    /// next frame), so <c>WithDisabled&lt;Lifetime&gt;</c> inside that window is the only queryable "dying"
+    /// state — this system must live within it. Placing it after TrailStreamBuilder
     /// forks the freshest rebuilt stream state.
     /// </summary>
     [UpdateInGroup(typeof(SimulationSystemGroup))]
     [UpdateAfter(typeof(TrailUpdateSystem))]
-    [UpdateBefore(typeof(LifetimeEndSystem))]
     [RequireMatchingQueriesForUpdate]
     public partial struct TrailLingerSystem : ISystem
     {
@@ -86,8 +85,9 @@ namespace Partity
     /// stream points = no renderable polyline, matching the render system's cull). The fork
     /// carries no cleanup components — destruction is a plain destroy.
     /// </summary>
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
-    [UpdateAfter(typeof(TrailUpdateSystem))]
+    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    [UpdateAfter(typeof(BeginInitializationEntityCommandBufferSystem))]
+    [UpdateAfter(typeof(StartSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct TrailLingeringSystem : ISystem
     {

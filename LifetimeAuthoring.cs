@@ -118,19 +118,19 @@ namespace Partity
         }
     }
 
-    [UpdateInGroup(typeof(SimulationSystemGroup), OrderLast = true)]
-    [UpdateBefore(typeof(EndSimulationEntityCommandBufferSystem))]
+    [UpdateInGroup(typeof(InitializationSystemGroup))]
+    [UpdateAfter(typeof(BeginInitializationEntityCommandBufferSystem))]
+    [UpdateAfter(typeof(StartSystemGroup))]
     [RequireMatchingQueriesForUpdate]
     public partial struct LifetimeEndSystem : ISystem
     {
-        [BurstCompile]
         public void OnUpdate(ref SystemState state)
         {
-            var ecb = SystemAPI.GetSingleton<EndSimulationEntityCommandBufferSystem.Singleton>().CreateCommandBuffer(state.WorldUnmanaged);
-
             // Destroy per entity rather than via a query capture: a query destroy requires every
             // entity of a destroyed entity's LinkedEntityGroup to be included in the query itself.
-            ecb.DestroyEntity(SystemAPI.QueryBuilder().WithDisabledRW<Lifetime>().WithOptions(EntityQueryOptions.FilterWriteGroup).Build().ToEntityArray(Allocator.Temp));
+            var entities = SystemAPI.QueryBuilder().WithDisabledRW<Lifetime>().WithOptions(EntityQueryOptions.FilterWriteGroup).Build()
+                .ToEntityArray(Allocator.Temp);
+            state.EntityManager.DestroyEntity(entities);
         }
     }
 }
