@@ -46,7 +46,7 @@ namespace Partity
             var dt = SystemAPI.Time.DeltaTime;
 
             foreach (var (transform, rotation, lifetime) in
-                SystemAPI.Query<RefRW<LocalTransform>, RotationOverLifetime, Lifetime>())
+                SystemAPI.Query<RefRW<LocalTransform>, RotationOverLifetime, Lifetime>().WithPresent<Lifetime>())
             {
                 var t = lifetime.Time / lifetime.Life;
                 var r = new float3(

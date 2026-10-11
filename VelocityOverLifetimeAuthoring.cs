@@ -97,6 +97,7 @@ namespace Partity
     }
 
     [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateAfter(typeof(LifetimeStepSystem))]
     [UpdateAfter(typeof(VelocityWorldSystem))]
     [UpdateBefore(typeof(MovementSystem))]
     [RequireMatchingQueriesForUpdate]
@@ -109,7 +110,7 @@ namespace Partity
                 return; // the emitted velocity is a frame delta; a zero step has none
 
             foreach (var (transform, velocity, vol, lifetime) in
-                SystemAPI.Query<RefRO<LocalTransform>, RefRW<Velocity>, VelocityOverLifetime, Lifetime>())
+                SystemAPI.Query<RefRO<LocalTransform>, RefRW<Velocity>, VelocityOverLifetime, Lifetime>().WithPresent<Lifetime>())
             {
                 velocity.ValueRW = Step(in vol, velocity.ValueRO.Value, transform.ValueRO.Position, lifetime.Lerp, lifetime.Time / lifetime.Life, dt);
             }
